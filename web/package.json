@@ -12,6 +12,7 @@
     ]
   },
   "dependencies": {
+    "@cedarjs/auth-dbauth-web": "5.0.0",
     "@cedarjs/forms": "5.0.0",
     "@cedarjs/router": "5.0.0",
     "@cedarjs/web": "5.0.0",

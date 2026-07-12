@@ -5,7 +5,11 @@ import { RedwoodApolloProvider } from '@cedarjs/web/apollo'
 
 import FatalErrorPage from 'src/pages/FatalErrorPage'
 
+import { AuthProvider, useAuth } from './auth.js'
+
 import './index.css'
+import './scaffold.css'
+
 
 interface AppProps {
   children?: ReactNode
@@ -14,7 +18,9 @@ interface AppProps {
 const App = ({ children }: AppProps) => (
   <FatalErrorBoundary page={FatalErrorPage}>
     <RedwoodProvider titleTemplate="%PageTitle | %AppTitle">
-      <RedwoodApolloProvider>{children}</RedwoodApolloProvider>
+      <AuthProvider>
+        <RedwoodApolloProvider useAuth={useAuth}>{children}</RedwoodApolloProvider>
+      </AuthProvider>
     </RedwoodProvider>
   </FatalErrorBoundary>
 )
