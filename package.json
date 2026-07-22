@@ -11,6 +11,7 @@
     "@cedarjs/eslint-config": "5.0.0",
     "@cedarjs/project-config": "5.0.0",
     "@cedarjs/testing": "5.0.0",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "prisma": "7.8.0"
   },
   "engines": {
@@ -34,9 +35,6 @@
       "built": true
     },
     "@swc/core": {
-      "built": true
-    },
-    "better-sqlite3": {
       "built": true
     },
     "core-js": {

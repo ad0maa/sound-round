@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 
+import { Music } from 'lucide-react'
+
 import {
   Form,
   Label,
@@ -13,6 +15,21 @@ import { Metadata } from '@cedarjs/web'
 import { toast, Toaster } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
+import { buttonVariants } from 'src/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from 'src/components/ui/card'
+import {
+  fieldErrorClassName,
+  inputClassName,
+  inputErrorClassName,
+  labelClassName,
+  labelErrorClassName,
+} from 'src/lib/formStyles'
 
 const SignupPage = () => {
   const { isAuthenticated, signUp } = useAuth()
@@ -23,7 +40,7 @@ const SignupPage = () => {
     }
   }, [isAuthenticated])
 
-  // focus on username box on page load
+  // focus on email box on page load
   const usernameRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     usernameRef.current?.focus()
@@ -33,6 +50,7 @@ const SignupPage = () => {
     const response = await signUp({
       username: data.username,
       password: data.password,
+      displayName: data.displayName,
     })
 
     if (response.message) {
@@ -49,49 +67,82 @@ const SignupPage = () => {
     <>
       <Metadata title="Signup" />
 
-      <main className="rw-main">
-        <Toaster toastOptions={{ className: 'rw-toast', duration: 6000 }} />
-        <div className="rw-scaffold rw-login-container">
-          <div className="rw-segment">
-            <header className="rw-segment-header">
-              <h2 className="rw-heading rw-heading-secondary">Signup</h2>
-            </header>
+      <main className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Toaster toastOptions={{ duration: 6000 }} />
+        <div className="w-full max-w-md space-y-4">
+          <div className="flex items-center justify-center gap-2">
+            <Music className="h-8 w-8 text-primary" />
+            <span className="bg-gradient-to-r from-purple-500 to-green-500 bg-clip-text text-2xl font-bold text-transparent">
+              SoundRound
+            </span>
+          </div>
 
-            <div className="rw-segment-main">
-              <div className="rw-form-wrapper">
-                <Form onSubmit={onSubmit} className="rw-form-wrapper">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create your account</CardTitle>
+              <CardDescription>
+                Start a league, invite your friends, share great music.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-2">
                   <Label
                     name="username"
-                    className="rw-label"
-                    errorClassName="rw-label rw-label-error"
+                    className={labelClassName}
+                    errorClassName={labelErrorClassName}
                   >
-                    Username
+                    Email
                   </Label>
                   <TextField
                     name="username"
-                    className="rw-input"
-                    errorClassName="rw-input rw-input-error"
+                    className={inputClassName}
+                    errorClassName={inputErrorClassName}
                     ref={usernameRef}
+                    validation={{
+                      required: { value: true, message: 'Email is required' },
+                    }}
+                  />
+                  <FieldError name="username" className={fieldErrorClassName} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label
+                    name="displayName"
+                    className={labelClassName}
+                    errorClassName={labelErrorClassName}
+                  >
+                    Display Name
+                  </Label>
+                  <TextField
+                    name="displayName"
+                    className={inputClassName}
+                    errorClassName={inputErrorClassName}
                     validation={{
                       required: {
                         value: true,
-                        message: 'Username is required',
+                        message: 'Display name is required',
                       },
                     }}
                   />
-                  <FieldError name="username" className="rw-field-error" />
+                  <FieldError
+                    name="displayName"
+                    className={fieldErrorClassName}
+                  />
+                </div>
 
+                <div className="space-y-2">
                   <Label
                     name="password"
-                    className="rw-label"
-                    errorClassName="rw-label rw-label-error"
+                    className={labelClassName}
+                    errorClassName={labelErrorClassName}
                   >
                     Password
                   </Label>
                   <PasswordField
                     name="password"
-                    className="rw-input"
-                    errorClassName="rw-input rw-input-error"
+                    className={inputClassName}
+                    errorClassName={inputErrorClassName}
                     autoComplete="current-password"
                     validation={{
                       required: {
@@ -100,23 +151,25 @@ const SignupPage = () => {
                       },
                     }}
                   />
-                  <FieldError name="password" className="rw-field-error" />
+                  <FieldError name="password" className={fieldErrorClassName} />
+                </div>
 
-                  <div className="rw-button-group">
-                    <Submit className="rw-button rw-button-blue">
-                      Sign Up
-                    </Submit>
-                  </div>
-                </Form>
-              </div>
-            </div>
-          </div>
-          <div className="rw-login-link">
-            <span>Already have an account?</span>{' '}
-            <Link to={routes.login()} className="rw-link">
-              Log in!
+                <Submit className={buttonVariants({ className: 'w-full' })}>
+                  Sign Up
+                </Submit>
+              </Form>
+            </CardContent>
+          </Card>
+
+          <p className="text-center text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link
+              to={routes.login()}
+              className="font-medium text-primary hover:underline"
+            >
+              Log in
             </Link>
-          </div>
+          </p>
         </div>
       </main>
     </>
