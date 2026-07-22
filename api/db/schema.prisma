@@ -47,6 +47,8 @@ model User {
   salt                String
   resetToken          String?
   resetTokenExpiresAt DateTime?
+  isDemo              Boolean        @default(false)
+  demoExpiresAt       DateTime?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
   memberships         LeagueMember[]
@@ -54,6 +56,8 @@ model User {
   submissions         Submission[]
   votes               Vote[]
   comments            Comment[]
+
+  @@index([isDemo, demoExpiresAt])
 }
 
 model League {
@@ -61,7 +65,7 @@ model League {
   name                    String
   description             String?
   creatorId               String
-  creator                 User           @relation("LeagueCreator", fields: [creatorId], references: [id])
+  creator                 User           @relation("LeagueCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   isPublic                Boolean        @default(false)
   inviteCode              String?        @unique
   maxPlayers              Int            @default(20)

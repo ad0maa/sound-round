@@ -4,6 +4,7 @@ import { DbAuthHandler } from '@cedarjs/auth-dbauth-api'
 import type { DbAuthHandlerOptions, UserType } from '@cedarjs/auth-dbauth-api'
 
 import { cookieName } from 'src/lib/auth'
+import { cleanupExpiredDemoUsers, DEMO_SESSION_MS } from 'src/lib/demoUsers'
 import { db } from 'src/lib/db'
 
 export const handler = async (
@@ -103,7 +104,8 @@ export const handler = async (
   }
 
   interface UserAttributes {
-    displayName: string
+    displayName?: string
+    isDemo?: boolean
   }
 
   const signupOptions: DbAuthHandlerOptions<
@@ -125,13 +127,28 @@ export const handler = async (
     //
     // If this returns anything else, it will be returned by the
     // `signUp()` function in the form of: `{ message: 'String here' }`.
-    handler: ({ username, hashedPassword, salt, userAttributes }) => {
+    handler: async ({ username, hashedPassword, salt, userAttributes }) => {
+      const isDemo = userAttributes?.isDemo === true
+
+      if (isDemo) {
+        // Best-effort sweep of past demo sessions so cleanup doesn't depend
+        // on an external cron being set up.
+        await cleanupExpiredDemoUsers()
+      }
+
       return db.user.create({
         data: {
           email: username,
           hashedPassword: hashedPassword,
           salt: salt,
-          displayName: userAttributes?.displayName || username.split('@')[0],
+          displayName:
+            userAttributes?.displayName ||
+            (isDemo
+              ? `Guest ${Math.floor(1000 + Math.random() * 9000)}`
+              : username.split('@')[0]),
+          isDemo,
+          // Server controls the expiry — never trust a client-supplied value.
+          demoExpiresAt: isDemo ? new Date(Date.now() + DEMO_SESSION_MS) : null,
         },
       })
     },

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Music } from 'lucide-react'
 
@@ -15,7 +15,7 @@ import { Metadata } from '@cedarjs/web'
 import { toast, Toaster } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
-import { buttonVariants } from 'src/components/ui/button'
+import { Button, buttonVariants } from 'src/components/ui/button'
 import {
   Card,
   CardContent,
@@ -23,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from 'src/components/ui/card'
+import { Separator } from 'src/components/ui/separator'
 import {
   fieldErrorClassName,
   inputClassName,
@@ -32,7 +33,8 @@ import {
 } from 'src/lib/formStyles'
 
 const LoginPage = () => {
-  const { isAuthenticated, logIn } = useAuth()
+  const { isAuthenticated, logIn, signUp } = useAuth()
+  const [isStartingDemo, setIsStartingDemo] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -57,6 +59,28 @@ const LoginPage = () => {
       toast.error(response.error)
     } else {
       toast.success('Welcome back!')
+    }
+  }
+
+  const onTryDemo = async () => {
+    setIsStartingDemo(true)
+    try {
+      // Throwaway, invisible credentials — the visitor never sees these.
+      // The server marks the account as a demo user and expires it later.
+      const id = crypto.randomUUID()
+      const response = await signUp({
+        username: `demo-${id}@demo.soundround.local`,
+        password: crypto.randomUUID(),
+        isDemo: true,
+      })
+
+      if (response.error) {
+        toast.error(response.error)
+      } else {
+        toast.success("You're in! Feel free to click around.")
+      }
+    } finally {
+      setIsStartingDemo(false)
     }
   }
 
@@ -139,6 +163,24 @@ const LoginPage = () => {
                   Log In
                 </Submit>
               </Form>
+
+              <div className="my-4 flex items-center gap-3">
+                <Separator className="flex-1" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <Separator className="flex-1" />
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={onTryDemo}
+                disabled={isStartingDemo}
+              >
+                {isStartingDemo
+                  ? 'Setting up your demo…'
+                  : 'Try the demo — no account needed'}
+              </Button>
             </CardContent>
           </Card>
 
