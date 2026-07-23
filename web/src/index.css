@@ -207,6 +207,15 @@
       0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.5);
     --shadow-lg:
       0 0 0 1px rgba(255, 255, 255, 0.1), 0 18px 44px rgba(0, 0, 0, 0.6);
+
+    /* Semantic fills that are pinned to light-sand values above and don't
+       derive from --bg/--surface/--text — without these overrides, anything
+       on bg-muted / bg-accent / bg-secondary renders cream-on-cream in dark
+       (e.g. the Search / Paste URL toggle on the submit page). */
+    --muted: color-mix(in srgb, #f2e8db 9%, transparent);
+    --accent: color-mix(in srgb, #f2e8db 9%, transparent);
+    --secondary: color-mix(in srgb, #f2e8db 10%, transparent);
+    --secondary-foreground: var(--text);
   }
 }
 

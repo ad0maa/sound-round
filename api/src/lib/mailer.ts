@@ -41,3 +41,49 @@ export const sendPasswordResetEmail = async (
     throw new Error('Could not send the password reset email')
   }
 }
+
+/**
+ * Round-lifecycle notification. Unlike password reset, failures here are
+ * logged rather than thrown — an email problem must never fail or roll back
+ * a round transition. Sent per-recipient so members never see each other's
+ * addresses.
+ */
+export const sendRoundEmail = async (
+  recipients: string[],
+  subject: string,
+  text: string,
+  html: string
+) => {
+  // Round transitions fire constantly inside scenario tests — never let a
+  // test run hit the real Resend API.
+  if (process.env.NODE_ENV === 'test') {
+    return
+  }
+  if (!resend) {
+    logger.warn(
+      { recipients: recipients.length, subject },
+      'RESEND_API_KEY not set — skipping round notification email'
+    )
+    return
+  }
+
+  const results = await Promise.allSettled(
+    recipients.map((to) =>
+      resend.emails.send({ to, from: FROM_EMAIL, subject, text, html })
+    )
+  )
+
+  for (const [i, result] of results.entries()) {
+    if (result.status === 'rejected') {
+      logger.error(
+        { to: recipients[i], subject, error: result.reason },
+        'Failed to send round notification email'
+      )
+    } else if (result.value.error) {
+      logger.error(
+        { to: recipients[i], subject, error: result.value.error },
+        'Failed to send round notification email'
+      )
+    }
+  }
+}

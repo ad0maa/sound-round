@@ -10,6 +10,8 @@ import TrackSearch, {
 } from 'src/components/TrackSearch/TrackSearch'
 import { Button } from 'src/components/ui/button'
 import { Card, CardContent } from 'src/components/ui/card'
+import { Label } from 'src/components/ui/label'
+import { Textarea } from 'src/components/ui/textarea'
 
 const CREATE_SUBMISSION = gql`
   mutation CreateSubmissionMutation($input: CreateSubmissionInput!) {
@@ -39,6 +41,7 @@ const formatDuration = (ms?: number | null): string => {
 
 const SubmitSongPage = ({ id, roundId }: SubmitSongPageProps) => {
   const [selectedTrack, setSelectedTrack] = useState<TrackResult | null>(null)
+  const [blurb, setBlurb] = useState('')
 
   const [createSubmission, { loading }] = useMutation(CREATE_SUBMISSION, {
     onCompleted: () => {
@@ -62,6 +65,7 @@ const SubmitSongPage = ({ id, roundId }: SubmitSongPageProps) => {
           albumName: selectedTrack.albumName,
           artworkUrl: selectedTrack.artworkUrl,
           durationMs: selectedTrack.durationMs,
+          blurb: blurb.trim() || null,
         },
       },
     })
@@ -127,6 +131,20 @@ const SubmitSongPage = ({ id, roundId }: SubmitSongPageProps) => {
                 </Button>
               </CardContent>
             </Card>
+
+            <div className="space-y-2">
+              <Label htmlFor="blurb">Why this song? (optional)</Label>
+              <Textarea
+                id="blurb"
+                value={blurb}
+                onChange={(e) => setBlurb(e.target.value)}
+                maxLength={300}
+                placeholder="A line about why you picked it — shown anonymously during voting, with your name at results."
+              />
+              <p className="text-right text-xs text-muted-foreground">
+                {blurb.length}/300
+              </p>
+            </div>
 
             <div className="flex gap-3">
               <Button

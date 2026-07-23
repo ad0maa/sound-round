@@ -126,16 +126,96 @@ export const updateLeague: MutationResolvers['updateLeague'] = async ({
   id,
   input,
 }) => {
-  const found = await db.league.findUnique({ where: { id } })
+  await requireLeagueRole(id, ['creator', 'admin'])
 
+  const found = await db.league.findUnique({ where: { id } })
   if (!found) {
     throw new UserInputError('League not found')
   }
-  if (found.creatorId !== currentUserId()) {
-    throw new ForbiddenError('Only the creator can edit this league')
+
+  if (input.maxPlayers != null) {
+    const memberCount = await db.leagueMember.count({
+      where: { leagueId: id },
+    })
+    if (input.maxPlayers < memberCount) {
+      throw new UserInputError(
+        `League already has ${memberCount} members — max players can't go below that`
+      )
+    }
   }
 
   return db.league.update({ where: { id }, data: input })
+}
+
+export const removeMember: MutationResolvers['removeMember'] = async ({
+  leagueId,
+  userId,
+}) => {
+  const me = await requireLeagueRole(leagueId, ['creator', 'admin'])
+
+  if (userId === currentUserId()) {
+    throw new UserInputError('Use "leave league" to remove yourself')
+  }
+
+  const target = await db.leagueMember.findUnique({
+    where: { leagueId_userId: { leagueId, userId } },
+  })
+  if (!target) {
+    throw new UserInputError('Not a member')
+  }
+  if (target.role === 'creator') {
+    throw new ForbiddenError('The creator cannot be removed')
+  }
+  if (target.role === 'admin' && me.role !== 'creator') {
+    throw new ForbiddenError('Only the creator can remove an admin')
+  }
+
+  // Their past submissions and votes stay — the leaderboard already tolerates
+  // departed members.
+  await db.leagueMember.delete({
+    where: { leagueId_userId: { leagueId, userId } },
+  })
+
+  return true
+}
+
+export const updateMemberRole: MutationResolvers['updateMemberRole'] = async ({
+  leagueId,
+  userId,
+  role,
+}) => {
+  await requireLeagueRole(leagueId, ['creator'])
+
+  if (role === 'creator') {
+    throw new UserInputError('A league has exactly one creator')
+  }
+
+  const target = await db.leagueMember.findUnique({
+    where: { leagueId_userId: { leagueId, userId } },
+  })
+  if (!target) {
+    throw new UserInputError('Not a member')
+  }
+  if (target.role === 'creator') {
+    throw new UserInputError("The creator's role cannot be changed")
+  }
+
+  return db.leagueMember.update({
+    where: { leagueId_userId: { leagueId, userId } },
+    data: { role },
+  })
+}
+
+/** Invalidates the old invite link (e.g. if it leaked) by minting a new code. */
+export const rotateInviteCode: MutationResolvers['rotateInviteCode'] = async ({
+  id,
+}) => {
+  await requireLeagueRole(id, ['creator', 'admin'])
+
+  return db.league.update({
+    where: { id },
+    data: { inviteCode: generateInviteCode() },
+  })
 }
 
 const joinAsPlayer = async (leagueId: string, maxPlayers: number) => {

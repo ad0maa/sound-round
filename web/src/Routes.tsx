@@ -36,6 +36,8 @@ const Routes = () => {
         <Route path="/leagues/browse" page={BrowseLeaguesPage} name="browseLeagues" />
         <Route path="/leagues/{id}" page={LeaguePage} name="league" />
         <Route path="/leagues/{id}/leaderboard" page={LeaderboardPage} name="leaderboard" />
+        <Route path="/leagues/{id}/settings" page={LeagueSettingsPage} name="leagueSettings" />
+        <Route path="/leagues/{id}/stats" page={LeagueStatsPage} name="leagueStats" />
         <Route path="/leagues/{id}/rounds/new" page={NewRoundPage} name="newRound" />
         <Route path="/leagues/{id}/rounds/{roundId}" page={RoundPage} name="round" />
         <Route path="/leagues/{id}/rounds/{roundId}/submit" page={SubmitSongPage} name="submitSong" />

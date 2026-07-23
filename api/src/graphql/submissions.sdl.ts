@@ -22,6 +22,7 @@ export const schema = gql`
     albumName: String
     artworkUrl: String
     durationMs: Int
+    blurb: String
     submittedAt: DateTime!
     isMine: Boolean
     submitter: User
@@ -52,6 +53,7 @@ export const schema = gql`
     albumName: String
     artworkUrl: String
     durationMs: Int
+    blurb: String
   }
 
   type Mutation {

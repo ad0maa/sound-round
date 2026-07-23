@@ -128,6 +128,9 @@ model Submission {
   albumName       String?
   artworkUrl      String?
   durationMs      Int?
+  // Optional "why I picked this" note — anonymous during voting, attributed
+  // at results (identity gating lives in the submitter resolver).
+  blurb           String?
   submittedAt     DateTime @default(now())
   votes           Vote[]
 
