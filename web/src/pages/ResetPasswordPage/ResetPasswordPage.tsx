@@ -1,11 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { Music } from 'lucide-react'
+
 import { Form, Label, PasswordField, Submit, FieldError } from '@cedarjs/forms'
-import { navigate, routes } from '@cedarjs/router'
+import { Link, navigate, routes } from '@cedarjs/router'
 import { Metadata } from '@cedarjs/web'
 import { toast, Toaster } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
+import { buttonVariants } from 'src/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from 'src/components/ui/card'
+import {
+  fieldErrorClassName,
+  inputClassName,
+  inputErrorClassName,
+  labelClassName,
+  labelErrorClassName,
+} from 'src/lib/formStyles'
 import { toastOptions } from 'src/lib/toastOptions'
 
 const ResetPasswordPage = ({ resetToken }: { resetToken: string }) => {
@@ -56,60 +73,69 @@ const ResetPasswordPage = ({ resetToken }: { resetToken: string }) => {
     <>
       <Metadata title="Reset Password" />
 
-      <main className="rw-main">
+      <main className="flex min-h-screen items-center justify-center bg-background p-4">
         <Toaster
           position="top-right"
           toastOptions={{ ...toastOptions, duration: 6000 }}
         />
-        <div className="rw-scaffold rw-login-container">
-          <div className="rw-segment">
-            <header className="rw-segment-header">
-              <h2 className="rw-heading rw-heading-secondary">
-                Reset Password
-              </h2>
-            </header>
-
-            <div className="rw-segment-main">
-              <div className="rw-form-wrapper">
-                <Form onSubmit={onSubmit} className="rw-form-wrapper">
-                  <div className="text-left">
-                    <Label
-                      name="password"
-                      className="rw-label"
-                      errorClassName="rw-label rw-label-error"
-                    >
-                      New Password
-                    </Label>
-                    <PasswordField
-                      name="password"
-                      autoComplete="new-password"
-                      className="rw-input"
-                      errorClassName="rw-input rw-input-error"
-                      disabled={!enabled}
-                      ref={passwordRef}
-                      validation={{
-                        required: {
-                          value: true,
-                          message: 'New Password is required',
-                        },
-                      }}
-                    />
-
-                    <FieldError name="password" className="rw-field-error" />
-                  </div>
-
-                  <div className="rw-button-group">
-                    <Submit
-                      className="rw-button rw-button-blue"
-                      disabled={!enabled}
-                    >
-                      Submit
-                    </Submit>
-                  </div>
-                </Form>
-              </div>
-            </div>
+        <div className="w-full max-w-md space-y-4">
+          <div className="flex items-center justify-center gap-2.5">
+            <span className="grid size-9 flex-none place-items-center rounded-full bg-brand-600 text-white">
+              <Music className="h-1/2 w-1/2" strokeWidth={2.75} />
+            </span>
+            <span className="font-heading text-2xl">SoundRound</span>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Reset password</CardTitle>
+              <CardDescription>Choose a new password below.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label
+                    name="password"
+                    className={labelClassName}
+                    errorClassName={labelErrorClassName}
+                  >
+                    New password
+                  </Label>
+                  <PasswordField
+                    name="password"
+                    autoComplete="new-password"
+                    className={inputClassName}
+                    errorClassName={inputErrorClassName}
+                    disabled={!enabled}
+                    ref={passwordRef}
+                    validation={{
+                      required: {
+                        value: true,
+                        message: 'New password is required',
+                      },
+                    }}
+                  />
+                  <FieldError name="password" className={fieldErrorClassName} />
+                </div>
+
+                <Submit
+                  className={buttonVariants({ className: 'w-full' })}
+                  disabled={!enabled}
+                >
+                  Reset password
+                </Submit>
+              </Form>
+            </CardContent>
+          </Card>
+
+          <p className="text-center text-sm text-muted-foreground">
+            <Link
+              to={routes.login()}
+              className="font-medium text-brand hover:underline"
+            >
+              Back to log in
+            </Link>
+          </p>
         </div>
       </main>
     </>

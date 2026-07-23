@@ -1,13 +1,13 @@
-import sgMail from '@sendgrid/mail'
+import { Resend } from 'resend'
 
 import { logger } from './logger'
 
-const apiKey = process.env.SENDGRID_API_KEY
-if (apiKey) {
-  sgMail.setApiKey(apiKey)
-}
+const apiKey = process.env.RESEND_API_KEY
+const resend = apiKey ? new Resend(apiKey) : null
 
-const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'no-reply@soundround.app'
+// resend.dev is Resend's built-in sandbox sender — works with no domain
+// setup, so this is a safe default before a real domain is verified.
+const FROM_EMAIL = process.env.MAIL_FROM_EMAIL || 'onboarding@resend.dev'
 const APP_URL = process.env.APP_URL || 'http://localhost:8920'
 
 export const sendPasswordResetEmail = async (
@@ -16,21 +16,28 @@ export const sendPasswordResetEmail = async (
 ) => {
   const resetUrl = `${APP_URL}/reset-password?resetToken=${resetToken}`
 
-  if (!apiKey) {
+  if (!resend) {
     // Lets the forgot-password flow keep working (and stay testable) before
-    // SENDGRID_API_KEY is configured, instead of failing the request.
+    // RESEND_API_KEY is configured, instead of failing the request.
     logger.warn(
       { to, resetUrl },
-      'SENDGRID_API_KEY not set — skipping password reset email'
+      'RESEND_API_KEY not set — skipping password reset email'
     )
     return
   }
 
-  await sgMail.send({
+  const { error } = await resend.emails.send({
     to,
     from: FROM_EMAIL,
     subject: 'Reset your SoundRound password',
     text: `Reset your password: ${resetUrl}`,
     html: `<p>Someone requested a password reset for your SoundRound account.</p><p><a href="${resetUrl}">Reset your password</a></p><p>If you didn't request this, you can safely ignore this email.</p>`,
   })
+
+  // The Resend SDK returns { error } instead of throwing — surface it, or
+  // the caller (and the user) would see this as a silent success.
+  if (error) {
+    logger.error({ to, error }, 'Failed to send password reset email')
+    throw new Error('Could not send the password reset email')
+  }
 }
