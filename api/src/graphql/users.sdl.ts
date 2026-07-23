@@ -4,4 +4,12 @@ export const schema = gql`
     displayName: String!
     avatarUrl: String
   }
+
+  input UpdateProfileInput {
+    displayName: String!
+  }
+
+  type Mutation {
+    updateProfile(input: UpdateProfileInput!): User! @requireAuth
+  }
 `

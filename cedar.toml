@@ -11,15 +11,15 @@
 [web]
   title = "SoundRound"
   titleTemplate = "%PageTitle | %AppTitle"
-  port = 8910
+  port = 8920
   apiUrl = "/api"
   includeEnvironmentVariables = [
     # Add any ENV vars that should be available to the web side to this array
     # See https://cedarjs.com/docs/environment-variables#web
   ]
 [api]
-  port = 8911
+  port = 8921
 [browser]
-  open = true
+  open = false
 [notifications]
   versionUpdates = ["latest"]

@@ -84,7 +84,7 @@ export const Success = ({
       ) : (
         <div className="space-y-4">
           {sorted.map((sub, i) => (
-            <Card key={sub.id} className={i === 0 ? 'border-primary' : ''}>
+            <Card key={sub.id} className={i === 0 ? 'border border-brand' : ''}>
               <CardContent className="space-y-3 py-4">
                 <button
                   type="button"

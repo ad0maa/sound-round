@@ -1,7 +1,6 @@
-import { Globe } from 'lucide-react'
-
 import { Metadata } from '@cedarjs/web'
 
+import PageContainer from 'src/components/PageContainer/PageContainer'
 import PageHeader from 'src/components/PageHeader/PageHeader'
 import PublicLeaguesCell from 'src/components/PublicLeaguesCell'
 
@@ -13,9 +12,13 @@ const BrowseLeaguesPage = () => {
         description="Discover public SoundRound leagues to join"
       />
 
-      <PageHeader title="Browse Leagues" icon={Globe} />
-
-      <PublicLeaguesCell />
+      <PageContainer>
+        <PageHeader
+          title="Browse Leagues"
+          description="Public leagues you can join right now."
+        />
+        <PublicLeaguesCell />
+      </PageContainer>
     </>
   )
 }

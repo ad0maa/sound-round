@@ -14,48 +14,199 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 270 70% 50%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 142 70% 45%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 270 70% 50%;
-    --radius: 0.5rem;
+    /* Ground / neutrals — shared across every accent palette */
+    --bg: #f6ece0;
+    --surface: #ece0cd;
+    --text: #2a221f;
+    --divider: color-mix(in srgb, #2a221f 16%, transparent);
+
+    --sand-100: #f9f4ed;
+    --sand-200: #eee7db;
+    --sand-300: #dcd3c4;
+    --sand-400: #c0b6a5;
+    --sand-500: #a19786;
+    --sand-600: #82796a;
+    --sand-700: #645c50;
+    --sand-800: #474238;
+    --sand-900: #2e2b25;
+
+    --shadow-sm: 0 1px 2px color-mix(in srgb, #2e2b25 14%, transparent);
+    --shadow-md: 0 3px 12px color-mix(in srgb, #2e2b25 15%, transparent);
+    --shadow-lg: 0 14px 36px color-mix(in srgb, #2e2b25 20%, transparent);
+
+    /* Accent ramps — default (cherry); overridden per data-theme below */
+    --brand: #d83f4e;
+    --brand2: #c98a3f;
+    --brand-100: #fff1f1;
+    --brand2-100: #fff2e6;
+    --brand-200: #ffdfde;
+    --brand2-200: #ffe2c5;
+    --brand-300: #ffc3c2;
+    --brand2-300: #fcca95;
+    --brand-400: #ff9495;
+    --brand2-400: #e6aa67;
+    --brand-500: #f75c67;
+    --brand2-500: #c8893e;
+    --brand-600: #cf3f4c;
+    --brand2-600: #a66c22;
+    --brand-700: #a42736;
+    --brand2-700: #82510a;
+    --brand-800: #7b1423;
+    --brand2-800: #603800;
+    --brand-900: #560312;
+    --brand2-900: #412400;
+
+    /* shadcn semantic layer, remapped onto the tokens above */
+    --background: var(--bg);
+    --foreground: var(--text);
+    --card: var(--surface);
+    --card-foreground: var(--text);
+    --popover: var(--surface);
+    --popover-foreground: var(--text);
+    --primary: var(--brand-600);
+    --primary-foreground: #fff;
+    --secondary: var(--brand2-100);
+    --secondary-foreground: var(--brand2-800);
+    --muted: var(--sand-100);
+    --muted-foreground: color-mix(in srgb, var(--text) 55%, transparent);
+    --accent: var(--sand-100);
+    --accent-foreground: var(--text);
+    --destructive: #c9463f;
+    --destructive-foreground: #fff;
+    --border: var(--divider);
+    --input: var(--divider);
+    --ring: var(--brand);
+    --radius: 1rem;
   }
 
+  :root[data-theme='grape'] {
+    --brand: #7d5cc6;
+    --brand2: #8fa350;
+    --brand-100: #f5f3ff;
+    --brand2-100: #f0fad7;
+    --brand-200: #e9e4ff;
+    --brand2-200: #e1efbf;
+    --brand-300: #d7ccff;
+    --brand2-300: #ccdd9f;
+    --brand-400: #bda7ff;
+    --brand2-400: #aec275;
+    --brand-500: #a181ef;
+    --brand2-500: #8fa350;
+    --brand-600: #8264c9;
+    --brand2-600: #728335;
+    --brand-700: #6449a0;
+    --brand2-700: #566520;
+    --brand-800: #483278;
+    --brand2-800: #3d490f;
+    --brand-900: #301e55;
+    --brand2-900: #273002;
+  }
+
+  :root[data-theme='plum'] {
+    --brand: #b34a6d;
+    --brand2: #7f9463;
+    --brand-100: #fff1f4;
+    --brand2-100: #eff9e3;
+    --brand-200: #ffdee6;
+    --brand2-200: #e0eecf;
+    --brand-300: #ffc0d0;
+    --brand2-300: #cadcb5;
+    --brand-400: #fb93b1;
+    --brand2-400: #abc091;
+    --brand-500: #dd7092;
+    --brand2-500: #8ca170;
+    --brand-600: #b85474;
+    --brand2-600: #6f8255;
+    --brand-700: #913c58;
+    --brand2-700: #53643d;
+    --brand-800: #6c273e;
+    --brand2-800: #3b4828;
+    --brand-900: #4b1528;
+    --brand2-900: #252f17;
+  }
+
+  :root[data-theme='marigold'] {
+    --brand: #d98828;
+    --brand2: #2f8f83;
+    --brand-100: #fff2e7;
+    --brand2-100: #dafef7;
+    --brand-200: #ffe2c7;
+    --brand2-200: #c2f4eb;
+    --brand-300: #ffc893;
+    --brand2-300: #a2e3d9;
+    --brand-400: #f1a455;
+    --brand2-400: #77c9bd;
+    --brand-500: #d48320;
+    --brand2-500: #4eab9e;
+    --brand-600: #ae6700;
+    --brand2-600: #328b7f;
+    --brand-700: #864e00;
+    --brand2-700: #1a6b62;
+    --brand-800: #623700;
+    --brand2-800: #074e46;
+    --brand-900: #422300;
+    --brand2-900: #00342e;
+  }
+
+  :root[data-theme='terracotta'] {
+    --brand: #c67139;
+    --brand2: #7a8a5e;
+    --brand-100: #fff2ea;
+    --brand2-100: #f1f8e4;
+    --brand-200: #ffe1d0;
+    --brand2-200: #e2edd1;
+    --brand-300: #ffc6a5;
+    --brand2-300: #cddab7;
+    --brand-400: #f3a16f;
+    --brand2-400: #afbf94;
+    --brand-500: #d67f48;
+    --brand2-500: #8fa073;
+    --brand-600: #b2632e;
+    --brand2-600: #728158;
+    --brand-700: #8c4818;
+    --brand2-700: #56633f;
+    --brand-800: #683108;
+    --brand2-800: #3d472b;
+    --brand-900: #481d00;
+    --brand2-900: #272f18;
+  }
+
+  :root[data-theme='teal'] {
+    --brand: #2f8f86;
+    --brand2: #e2624a;
+    --brand-100: #dafef9;
+    --brand2-100: #fff1ee;
+    --brand-200: #c2f4ed;
+    --brand2-200: #ffe0d9;
+    --brand-300: #a2e3db;
+    --brand2-300: #ffc4b7;
+    --brand-400: #77c9bf;
+    --brand2-400: #ff9781;
+    --brand-500: #4eaaa1;
+    --brand2-500: #ec6b53;
+    --brand-600: #328a82;
+    --brand2-600: #c54f39;
+    --brand-700: #1a6b64;
+    --brand2-700: #9d3624;
+    --brand-800: #074d48;
+    --brand2-800: #752213;
+    --brand-900: #00342f;
+    --brand2-900: #521005;
+  }
+
+  /* Dark ground — accent ramps stay the same in both modes; only the
+     ground (bg/surface/text) and which ramp step components reach for
+     changes. See docs/design-system.md. */
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 6%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 6%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 270 70% 50%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 142 70% 45%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 270 70% 50%;
+    --bg: #1e1815;
+    --surface: #29211d;
+    --text: #f2e8db;
+    --divider: color-mix(in srgb, #f2e8db 16%, transparent);
+    --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-md:
+      0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-lg:
+      0 0 0 1px rgba(255, 255, 255, 0.1), 0 18px 44px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -64,6 +215,71 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-body text-[15px] leading-[1.55] text-foreground;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading font-normal;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+  }
+  h6 {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: sr-fade-in 0.35s ease;
+  }
+  .livedot {
+    display: inline-block;
+    height: 9px;
+    width: 9px;
+    flex: none;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .livedot {
+      animation: sr-livedot-pulse 1.4s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes sr-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sr-livedot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none !important;
   }
 }

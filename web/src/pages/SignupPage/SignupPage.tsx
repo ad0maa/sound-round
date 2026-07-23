@@ -30,6 +30,7 @@ import {
   labelClassName,
   labelErrorClassName,
 } from 'src/lib/formStyles'
+import { toastOptions } from 'src/lib/toastOptions'
 
 const SignupPage = () => {
   const { isAuthenticated, signUp } = useAuth()
@@ -68,13 +69,16 @@ const SignupPage = () => {
       <Metadata title="Signup" />
 
       <main className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Toaster toastOptions={{ duration: 6000 }} />
+        <Toaster
+          position="top-right"
+          toastOptions={{ ...toastOptions, duration: 6000 }}
+        />
         <div className="w-full max-w-md space-y-4">
-          <div className="flex items-center justify-center gap-2">
-            <Music className="h-8 w-8 text-primary" />
-            <span className="bg-gradient-to-r from-purple-500 to-green-500 bg-clip-text text-2xl font-bold text-transparent">
-              SoundRound
+          <div className="flex items-center justify-center gap-2.5">
+            <span className="grid size-9 flex-none place-items-center rounded-full bg-brand-600 text-white">
+              <Music className="h-1/2 w-1/2" strokeWidth={2.75} />
             </span>
+            <span className="font-heading text-2xl">SoundRound</span>
           </div>
 
           <Card>

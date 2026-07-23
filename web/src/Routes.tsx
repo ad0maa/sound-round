@@ -41,6 +41,7 @@ const Routes = () => {
         <Route path="/leagues/{id}/rounds/{roundId}/submit" page={SubmitSongPage} name="submitSong" />
         <Route path="/leagues/{id}/rounds/{roundId}/vote" page={VotePage} name="vote" />
         <Route path="/leagues/{id}/rounds/{roundId}/results" page={ResultsPage} name="results" />
+        <Route path="/settings" page={SettingsPage} name="settings" />
       </PrivateSet>
 
       <Route notfound page={NotFoundPage} />

@@ -8,7 +8,9 @@ import { toast, Toaster } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
 import PublicLeaguesCell from 'src/components/PublicLeaguesCell'
+import { Badge } from 'src/components/ui/badge'
 import { Button, buttonVariants } from 'src/components/ui/button'
+import { toastOptions } from 'src/lib/toastOptions'
 
 const HomePage = () => {
   const { isAuthenticated, signUp } = useAuth()
@@ -49,61 +51,65 @@ const HomePage = () => {
   return (
     <>
       <Metadata title="SoundRound" description="Music league with friends" />
-      <Toaster toastOptions={{ duration: 6000 }} />
+      <Toaster
+        position="top-right"
+        toastOptions={{ ...toastOptions, duration: 6000 }}
+      />
 
       <main className="flex min-h-screen flex-col bg-background">
-        <header className="flex items-center justify-between border-b px-4 py-4 md:px-6">
-          <div className="flex items-center gap-2">
-            <Music className="h-6 w-6 text-primary" />
-            <span className="bg-gradient-to-r from-purple-500 to-green-500 bg-clip-text text-lg font-bold text-transparent">
-              SoundRound
+        <header className="flex items-center justify-between px-5 py-5 nav:px-8">
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-9 flex-none place-items-center rounded-full bg-brand-600 text-white">
+              <Music className="h-1/2 w-1/2" strokeWidth={2.75} />
             </span>
+            <span className="font-heading text-[20px]">SoundRound</span>
           </div>
           <div className="flex items-center gap-2">
             <Link
               to={routes.login()}
-              className={buttonVariants({ variant: 'ghost' })}
+              className={buttonVariants({ variant: 'secondary' })}
             >
               Log in
             </Link>
             <Link
               to={routes.signup()}
-              className={buttonVariants({ variant: 'outline' })}
+              className={buttonVariants({ variant: 'default' })}
             >
               Sign up
             </Link>
           </div>
         </header>
 
-        <section className="flex flex-col items-center gap-4 px-4 py-16 text-center">
-          <h1 className="text-3xl font-bold md:text-4xl">
-            Music leagues with friends
+        <section className="flex flex-col items-center gap-5 px-6 py-16 text-center animate-fade-in">
+          <Badge variant="secondary">A music league with your friends</Badge>
+          <h1 className="max-w-[14ch] text-[42px] leading-[1.05] nav:text-[64px]">
+            Every week, a new theme. Everyone brings a song.
           </h1>
-          <p className="max-w-xl text-muted-foreground">
-            Submit songs, vote on your favorites, and crown a winner every
-            round.
+          <p className="max-w-[52ch] text-lg text-muted-foreground">
+            Submit tracks, vote on your favourites, and crown a champion every
+            round. It&apos;s the group chat argument, settled properly.
           </p>
-          <Button
-            size="lg"
-            className="gap-2"
-            onClick={onTryDemo}
-            disabled={isStartingDemo}
-          >
-            <Sparkles className="h-4 w-4" />
-            {isStartingDemo
-              ? 'Setting up your demo…'
-              : 'Try the demo — no account needed'}
-          </Button>
+          <div className="mt-2 flex flex-wrap justify-center gap-3">
+            <Button size="lg" onClick={onTryDemo} disabled={isStartingDemo}>
+              <Sparkles className="h-4 w-4" />
+              {isStartingDemo
+                ? 'Setting up your demo…'
+                : 'Try the demo — no account'}
+            </Button>
+            <Button asChild size="lg" variant="secondary">
+              <a href="#public-leagues">Browse public leagues</a>
+            </Button>
+          </div>
         </section>
 
-        <section className="flex-1 border-t">
-          <div className="px-4 pt-6 md:px-6">
-            <h2 className="text-lg font-semibold">Browse public leagues</h2>
-            <p className="text-sm text-muted-foreground">
+        <section id="public-leagues" className="flex-1 bg-card/60 pb-10 pt-8">
+          <div className="mx-auto w-full max-w-[960px] px-5 nav:px-10">
+            <h2 className="text-[24px]">Browse public leagues</h2>
+            <p className="mb-4 text-sm text-muted-foreground">
               See what&apos;s already live — log in or try the demo to join.
             </p>
+            <PublicLeaguesCell isAuthenticated={false} />
           </div>
-          <PublicLeaguesCell isAuthenticated={false} />
         </section>
       </main>
     </>

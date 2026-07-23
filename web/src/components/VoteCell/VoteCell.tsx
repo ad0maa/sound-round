@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { ArrowLeft, Minus, Music, Plus } from 'lucide-react'
 import type { FindVoteQuery, FindVoteQueryVariables } from 'types/graphql'
 
 import { Link, navigate, routes } from '@cedarjs/router'
@@ -7,9 +8,11 @@ import type { TypedDocumentNode } from '@cedarjs/web'
 import { useMutation } from '@cedarjs/web'
 import { toast } from '@cedarjs/web/toast'
 
+import PageContainer from 'src/components/PageContainer/PageContainer'
 import TrackEmbed from 'src/components/TrackEmbed/TrackEmbed'
 import { Button } from 'src/components/ui/button'
-import { Card, CardContent } from 'src/components/ui/card'
+import { Card } from 'src/components/ui/card'
+import { cn } from 'src/lib/utils'
 
 export const QUERY: TypedDocumentNode<FindVoteQuery, FindVoteQueryVariables> =
   gql`
@@ -49,14 +52,21 @@ const CAST_VOTES = gql`
 `
 
 export const Loading = () => (
-  <p className="p-6 text-muted-foreground">Loading submissions…</p>
+  <PageContainer>
+    <p className="text-muted-foreground">Loading submissions…</p>
+  </PageContainer>
 )
 
 export const Failure = ({ error }: { error?: { message: string } }) => (
-  <p className="p-6 text-destructive">Error: {error?.message}</p>
+  <PageContainer>
+    <p className="text-destructive">Error: {error?.message}</p>
+  </PageContainer>
 )
 
 type VoteCellProps = FindVoteQuery & FindVoteQueryVariables
+
+const stepBtnClass =
+  'grid size-[38px] flex-none place-items-center rounded-full border-[1.5px] border-divider bg-background dark:bg-card text-xl font-bold text-foreground transition-colors enabled:hover:border-brand enabled:hover:text-brand disabled:cursor-not-allowed disabled:opacity-40'
 
 export const Success = ({
   league,
@@ -120,124 +130,136 @@ export const Success = ({
   // Guard direct navigation outside the voting window (server enforces too).
   if (round.state !== 'voting') {
     return (
-      <div className="mx-auto w-full max-w-3xl p-6">
-        <Card>
-          <CardContent className="space-y-4 py-8 text-center">
-            <p className="text-muted-foreground">
-              {round.state === 'results'
-                ? 'Voting has closed for this round.'
-                : 'Voting hasn’t opened yet — songs are still being submitted.'}
-            </p>
-            <Button asChild variant="outline">
-              <Link to={routes.round({ id: leagueId, roundId })}>
-                Back to Round
-              </Link>
-            </Button>
-          </CardContent>
+      <PageContainer wide={false}>
+        <Card className="items-center gap-4 py-8 text-center">
+          <p className="text-muted-foreground">
+            {round.state === 'results'
+              ? 'Voting has closed for this round.'
+              : 'Voting hasn’t opened yet — songs are still being submitted.'}
+          </p>
+          <Button asChild variant="secondary">
+            <Link to={routes.round({ id: leagueId, roundId })}>
+              Back to Round
+            </Link>
+          </Button>
         </Card>
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Vote</h1>
-        <div className="text-right">
-          <p
-            className={`text-2xl font-bold ${pointsRemaining === 0 ? 'text-green-500' : ''}`}
+    <PageContainer>
+      <Button asChild variant="ghost" className="mb-3.5 -ml-1">
+        <Link to={routes.round({ id: leagueId, roundId })}>
+          <ArrowLeft className="h-4 w-4" />
+          Back to round
+        </Link>
+      </Button>
+
+      <div className="mb-3 flex flex-wrap items-start gap-4">
+        <div>
+          <h1 className="text-[36px]">Vote</h1>
+          <p className="mt-1.5 max-w-[48ch] text-muted-foreground">
+            Listen to each track, then spread your {upvotesPerRound} points.
+            Give more to your favourites.
+          </p>
+        </div>
+        <div className="ml-auto text-right">
+          <div
+            className={cn(
+              'font-heading text-[40px] leading-none',
+              pointsRemaining === 0 ? 'text-brand' : 'text-foreground'
+            )}
           >
             {pointsRemaining}
-          </p>
-          <p className="text-xs text-muted-foreground">points remaining</p>
+          </div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            points left
+          </div>
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        Listen to each track, then distribute your {upvotesPerRound} points. You
-        can give multiple points to your favourites.
-      </p>
-
       {others.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">
-              No other submissions to vote on yet. You can only vote on songs
-              submitted by other members.
-            </p>
-          </CardContent>
+        <Card className="my-5 items-center py-8 text-center">
+          <p className="text-muted-foreground">
+            No other submissions to vote on yet. You can only vote on songs
+            submitted by other members.
+          </p>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="my-5 flex flex-col gap-3">
           {others.map((sub) => {
             const pts = votes[sub.id] ?? 0
             return (
-              <Card key={sub.id} className={pts > 0 ? 'border-primary' : ''}>
-                <CardContent className="space-y-3 py-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      {sub.artworkUrl && (
-                        <img
-                          src={sub.artworkUrl}
-                          alt=""
-                          className="h-10 w-10 flex-shrink-0 rounded object-cover"
-                        />
-                      )}
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{sub.trackName}</p>
-                        <p className="truncate text-sm text-muted-foreground">
-                          {sub.artistName}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-shrink-0 items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPoints(sub.id, pts - 1)}
-                        disabled={pts <= 0}
-                      >
-                        -
-                      </Button>
-                      <span className="w-8 text-center text-lg font-bold">
-                        {pts}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPoints(sub.id, pts + 1)}
-                        disabled={
-                          pointsRemaining <= 0 ||
-                          (maxPointsPerSong != null && pts >= maxPointsPerSong)
-                        }
-                      >
-                        +
-                      </Button>
-                    </div>
+              <Card
+                key={sub.id}
+                className={cn('gap-3', pts > 0 && 'border border-brand')}
+              >
+                <div className="flex items-center gap-3.5">
+                  {sub.artworkUrl ? (
+                    <img
+                      src={sub.artworkUrl}
+                      alt=""
+                      className="size-[46px] flex-none rounded-2xl object-cover"
+                    />
+                  ) : (
+                    <span className="grid size-[46px] flex-none place-items-center rounded-2xl bg-brand text-white">
+                      <Music className="h-5 w-5" strokeWidth={2.2} />
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{sub.trackName}</p>
+                    <p className="truncate text-[13px] text-muted-foreground">
+                      {sub.artistName}
+                    </p>
                   </div>
+                  <div className="flex flex-none items-center gap-2">
+                    <button
+                      type="button"
+                      className={stepBtnClass}
+                      onClick={() => setPoints(sub.id, pts - 1)}
+                      disabled={pts <= 0}
+                      aria-label={`Remove a point from ${sub.trackName}`}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <span className="w-[26px] text-center font-heading text-[22px]">
+                      {pts}
+                    </span>
+                    <button
+                      type="button"
+                      className={stepBtnClass}
+                      onClick={() => setPoints(sub.id, pts + 1)}
+                      disabled={
+                        pointsRemaining <= 0 ||
+                        (maxPointsPerSong != null && pts >= maxPointsPerSong)
+                      }
+                      aria-label={`Add a point to ${sub.trackName}`}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
 
-                  <TrackEmbed
-                    platform={sub.platform}
-                    platformTrackId={sub.platformTrackId}
-                    trackUrl={sub.trackUrl}
-                    compact
-                  />
-                </CardContent>
+                <TrackEmbed
+                  platform={sub.platform}
+                  platformTrackId={sub.platformTrackId}
+                  trackUrl={sub.trackUrl}
+                  compact
+                />
               </Card>
             )
           })}
         </div>
       )}
 
-      <div className="flex gap-3">
-        <Button
-          className="flex-1"
-          onClick={handleSubmit}
-          disabled={submitting || others.length === 0}
-        >
-          {submitting ? 'Submitting…' : 'Submit Votes'}
-        </Button>
-      </div>
-    </div>
+      <Button
+        className="h-auto w-full py-3.5 text-base"
+        onClick={handleSubmit}
+        disabled={submitting || others.length === 0}
+      >
+        {submitting ? 'Submitting…' : 'Submit votes'}
+      </Button>
+    </PageContainer>
   )
 }

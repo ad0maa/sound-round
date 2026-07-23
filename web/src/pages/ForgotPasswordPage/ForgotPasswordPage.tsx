@@ -1,11 +1,29 @@
 import { useEffect, useRef } from 'react'
 
+import { Music } from 'lucide-react'
+
 import { Form, Label, TextField, Submit, FieldError } from '@cedarjs/forms'
-import { navigate, routes } from '@cedarjs/router'
+import { Link, navigate, routes } from '@cedarjs/router'
 import { Metadata } from '@cedarjs/web'
 import { toast, Toaster } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
+import { buttonVariants } from 'src/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from 'src/components/ui/card'
+import {
+  fieldErrorClassName,
+  inputClassName,
+  inputErrorClassName,
+  labelClassName,
+  labelErrorClassName,
+} from 'src/lib/formStyles'
+import { toastOptions } from 'src/lib/toastOptions'
 
 const ForgotPasswordPage = () => {
   const { isAuthenticated, forgotPassword } = useAuth()
@@ -41,50 +59,63 @@ const ForgotPasswordPage = () => {
     <>
       <Metadata title="Forgot Password" />
 
-      <main className="rw-main">
-        <Toaster toastOptions={{ className: 'rw-toast', duration: 6000 }} />
-        <div className="rw-scaffold rw-login-container">
-          <div className="rw-segment">
-            <header className="rw-segment-header">
-              <h2 className="rw-heading rw-heading-secondary">
-                Forgot Password
-              </h2>
-            </header>
-
-            <div className="rw-segment-main">
-              <div className="rw-form-wrapper">
-                <Form onSubmit={onSubmit} className="rw-form-wrapper">
-                  <div className="text-left">
-                    <Label
-                      name="username"
-                      className="rw-label"
-                      errorClassName="rw-label rw-label-error"
-                    >
-                      Username
-                    </Label>
-                    <TextField
-                      name="username"
-                      className="rw-input"
-                      errorClassName="rw-input rw-input-error"
-                      ref={usernameRef}
-                      validation={{
-                        required: {
-                          value: true,
-                          message: 'Username is required',
-                        },
-                      }}
-                    />
-
-                    <FieldError name="username" className="rw-field-error" />
-                  </div>
-
-                  <div className="rw-button-group">
-                    <Submit className="rw-button rw-button-blue">Submit</Submit>
-                  </div>
-                </Form>
-              </div>
-            </div>
+      <main className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Toaster
+          position="top-right"
+          toastOptions={{ ...toastOptions, duration: 6000 }}
+        />
+        <div className="w-full max-w-md space-y-4">
+          <div className="flex items-center justify-center gap-2.5">
+            <span className="grid size-9 flex-none place-items-center rounded-full bg-brand-600 text-white">
+              <Music className="h-1/2 w-1/2" strokeWidth={2.75} />
+            </span>
+            <span className="font-heading text-2xl">SoundRound</span>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Forgot password</CardTitle>
+              <CardDescription>
+                We&apos;ll email you a link to reset it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label
+                    name="username"
+                    className={labelClassName}
+                    errorClassName={labelErrorClassName}
+                  >
+                    Email
+                  </Label>
+                  <TextField
+                    name="username"
+                    className={inputClassName}
+                    errorClassName={inputErrorClassName}
+                    ref={usernameRef}
+                    validation={{
+                      required: { value: true, message: 'Email is required' },
+                    }}
+                  />
+                  <FieldError name="username" className={fieldErrorClassName} />
+                </div>
+
+                <Submit className={buttonVariants({ className: 'w-full' })}>
+                  Send reset link
+                </Submit>
+              </Form>
+            </CardContent>
+          </Card>
+
+          <p className="text-center text-sm text-muted-foreground">
+            <Link
+              to={routes.login()}
+              className="font-medium text-brand hover:underline"
+            >
+              Back to log in
+            </Link>
+          </p>
         </div>
       </main>
     </>
