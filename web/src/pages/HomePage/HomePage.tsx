@@ -8,7 +8,7 @@ const HomePage = () => {
     navigate(routes.leagues(), { replace: true })
   }, [])
 
-  return <Metadata title="SoundRound" description="Music league with friends" />
+  return <Metadata title="Home" description="Music league with friends" />
 }
 
 export default HomePage
