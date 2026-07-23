@@ -193,6 +193,21 @@
     --brand-900: #00342f;
     --brand2-900: #521005;
   }
+
+  /* Dark ground — accent ramps stay the same in both modes; only the
+     ground (bg/surface/text) and which ramp step components reach for
+     changes. See docs/design-system.md. */
+  .dark {
+    --bg: #1e1815;
+    --surface: #29211d;
+    --text: #f2e8db;
+    --divider: color-mix(in srgb, #f2e8db 16%, transparent);
+    --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --shadow-md:
+      0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-lg:
+      0 0 0 1px rgba(255, 255, 255, 0.1), 0 18px 44px rgba(0, 0, 0, 0.6);
+  }
 }
 
 @layer base {

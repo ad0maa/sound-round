@@ -62,7 +62,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       />
 
       {isDemo && (
-        <div className="flex flex-none items-center justify-center gap-2 bg-brand-100 px-4 py-2 text-center text-sm text-brand-800">
+        <div className="flex flex-none items-center justify-center gap-2 bg-brand-100 px-4 py-2 text-center text-sm text-brand-800 dark:bg-brand-900 dark:text-brand-100">
           <Badge>Demo Mode</Badge>
           <span>
             You&apos;re exploring with a temporary account — your data clears
@@ -94,7 +94,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 className={cn(
                   'flex w-full items-center gap-2.5 rounded-full px-3 py-2.5 font-heading text-[15px] transition-colors',
                   active
-                    ? 'bg-brand-100 text-brand-800'
+                    ? 'bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-100'
                     : 'text-foreground hover:bg-foreground/[0.06]'
                 )}
               >

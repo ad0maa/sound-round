@@ -102,9 +102,9 @@ const roundKind = (state: string) =>
   state === 'results' ? 'done' : state === 'upcoming' ? 'up' : 'active'
 
 const numClassFor: Record<string, string> = {
-  done: 'bg-brand2-200 text-brand2-800',
+  done: 'bg-brand2-200 text-brand2-800 dark:bg-brand2-800 dark:text-brand2-100',
   active: 'bg-brand-600 text-white',
-  up: 'bg-sand-200 text-sand-700',
+  up: 'bg-sand-200 text-sand-700 dark:bg-sand-800 dark:text-sand-300',
 }
 
 const tagVariantFor: Record<string, 'secondary' | 'default' | 'outline'> = {
@@ -247,7 +247,7 @@ export const Success = ({
 
       {/* Finished */}
       {league.isFinished && (
-        <Card className="mb-5 border border-brand2/40 bg-brand2-100">
+        <Card className="mb-5 border border-brand2/40 bg-brand2-100 dark:bg-brand2-900">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <PartyPopper className="h-6 w-6 text-brand2-700" />
@@ -401,7 +401,7 @@ export const Success = ({
                     key={entry.user.id}
                     className={cn(
                       'flex items-center gap-3 rounded-2xl px-1.5 py-1',
-                      isYou && 'bg-brand-100'
+                      isYou && 'bg-brand-100 dark:bg-brand-900'
                     )}
                   >
                     <span
@@ -409,7 +409,7 @@ export const Success = ({
                         'grid h-[26px] w-[26px] flex-none place-items-center rounded-full text-xs font-bold',
                         index < 3
                           ? 'bg-brand-600 text-white'
-                          : 'bg-sand-200 text-sand-700'
+                          : 'bg-sand-200 text-sand-700 dark:bg-sand-800 dark:text-sand-300'
                       )}
                     >
                       {index + 1}

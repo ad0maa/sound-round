@@ -89,7 +89,7 @@ export const Success = ({
       </p>
 
       {winners.length > 0 && (
-        <Card className="mb-5 items-center gap-2 border border-brand2 bg-brand2-100 py-8 text-center">
+        <Card className="mb-5 items-center gap-2 border border-brand2 bg-brand2-100 py-8 text-center dark:bg-brand2-900">
           <Crown className="h-10 w-10 text-brand2-700" />
           <p className="text-sm uppercase tracking-wide text-muted-foreground">
             {winners.length > 1 ? 'Co-champions' : 'Champion'}
@@ -114,7 +114,7 @@ export const Success = ({
               key={entry.user.id}
               className={cn(
                 'flex items-center gap-3.5 rounded-2xl px-2 py-1.5',
-                isCurrentUser && 'bg-brand-100'
+                isCurrentUser && 'bg-brand-100 dark:bg-brand-900'
               )}
             >
               <span
@@ -122,7 +122,7 @@ export const Success = ({
                   'grid size-8 flex-none place-items-center rounded-full text-sm font-bold',
                   topThree
                     ? 'bg-brand-600 text-white'
-                    : 'bg-sand-200 text-sand-700'
+                    : 'bg-sand-200 text-sand-700 dark:bg-sand-800 dark:text-sand-300'
                 )}
               >
                 {position}

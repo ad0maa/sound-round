@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { ArrowLeft, LogOut, Mail } from 'lucide-react'
+import { ArrowLeft, LogOut, Mail, Moon, Sun } from 'lucide-react'
 
 import { Link, routes } from '@cedarjs/router'
 import { Metadata, useMutation } from '@cedarjs/web'
@@ -14,6 +14,8 @@ import { Button } from 'src/components/ui/button'
 import { Card } from 'src/components/ui/card'
 import { Input } from 'src/components/ui/input'
 import { Label } from 'src/components/ui/label'
+import { useTheme } from 'src/lib/theme'
+import { cn } from 'src/lib/utils'
 
 const UPDATE_PROFILE = gql`
   mutation UpdateProfileMutation($input: UpdateProfileInput!) {
@@ -26,6 +28,7 @@ const UPDATE_PROFILE = gql`
 
 const SettingsPage = () => {
   const { currentUser, reauthenticate, forgotPassword, logOut } = useAuth()
+  const { mode, setMode } = useTheme()
 
   const email = (currentUser?.email as string) ?? ''
   const [displayName, setDisplayName] = useState(
@@ -156,8 +159,38 @@ const SettingsPage = () => {
               Appearance
             </div>
             <p className="text-sm text-muted-foreground">
-              Pick an accent — it applies everywhere, on this device.
+              Light, dark, or an accent — all apply everywhere, on this device.
             </p>
+
+            <div className="inline-flex w-fit overflow-hidden rounded-full border border-divider">
+              {(
+                [
+                  { id: 'light' as const, label: 'Light', icon: Sun },
+                  { id: 'dark' as const, label: 'Dark', icon: Moon },
+                ] satisfies {
+                  id: 'light' | 'dark'
+                  label: string
+                  icon: typeof Sun
+                }[]
+              ).map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={mode === id}
+                  onClick={() => setMode(id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium transition-colors',
+                    mode === id
+                      ? 'bg-brand text-white'
+                      : 'hover:bg-foreground/[0.06]'
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <ThemeSwitcher showLabels className="mt-1" />
           </Card>
         </div>

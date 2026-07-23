@@ -66,7 +66,7 @@ export const Failure = ({ error }: { error?: { message: string } }) => (
 type VoteCellProps = FindVoteQuery & FindVoteQueryVariables
 
 const stepBtnClass =
-  'grid size-[38px] flex-none place-items-center rounded-full border-[1.5px] border-divider bg-background text-xl font-bold text-foreground transition-colors enabled:hover:border-brand enabled:hover:text-brand disabled:cursor-not-allowed disabled:opacity-40'
+  'grid size-[38px] flex-none place-items-center rounded-full border-[1.5px] border-divider bg-background dark:bg-card text-xl font-bold text-foreground transition-colors enabled:hover:border-brand enabled:hover:text-brand disabled:cursor-not-allowed disabled:opacity-40'
 
 export const Success = ({
   league,

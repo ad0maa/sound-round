@@ -35,6 +35,29 @@ theme on reload). The picker itself is
 (swatch grid, or `showLabels` for the full list used on Settings), and it's
 per-browser, not synced to the user's account.
 
+### Light + dark mode
+Both are implemented. Ground tokens (`--bg`/`--surface`/`--text`/`--divider`/
+shadows) flip under a `.dark` class on `<html>` (Tailwind's `darkMode:
+['class']`, already configured) — see the `.dark { … }` block in
+`index.css`. **Accent ramp values don't change between modes** — a saturated
+`brand-600` fill with white text reads fine on either background. What
+*does* change is which ramp step a few specific surfaces reach for (tags,
+avatars, round-number badges, the "you"/current-user row highlight, the
+finished-league banner): light mode uses the light/pale end of the ramp,
+dark mode the deep end, added inline as `dark:` Tailwind variants at each
+call site (`Badge`, `Avatar`, and the round-badge/highlight logic in
+`LeagueCell`/`LeaderboardCell`/`AppLayout`/`VoteCell`). If you add a new
+surface using `brand-100`/`sand-200`/etc., check whether it needs a
+`dark:` pair the same way — grep those files for `dark:bg-brand-900` for
+the existing examples.
+
+Mode is independent of the accent choice: `useTheme()` from
+[`theme.tsx`](../web/src/lib/theme.tsx) exposes both `theme`/`setTheme`
+(accent) and `mode`/`setMode` (`'light' | 'dark'`). Mode defaults to the OS
+preference (`prefers-color-scheme`) until the user picks explicitly in
+Settings, then persists to `localStorage` (`sr-mode`) same as the accent —
+the blocking script in `index.html` applies both before first paint.
+
 ### Typography, spacing, radius
 - Headings: Caprasimo. Body: Figtree. Both loaded via Google Fonts in
   `web/index.html`, applied via `font-heading` / `font-body` Tailwind
@@ -82,6 +105,24 @@ row, and it still wraps into columns once there's enough content. See
   every `<Toaster>` spreads in (pill shape, card background, brand-tinted
   success/error icons); all six `<Toaster>` instances use
   `position="top-right"`.
+
+## Reference files
+[`docs/design-tokens/`](./design-tokens/) has the original design deliverable's
+token files, kept because they're self-contained and still accurate — no
+retheme has happened since:
+- `tokens.json` / `tokens.css` — same values as `index.css`, under the
+  original `--color-*` naming rather than our renamed ones (`--color-bg` →
+  `--bg`, `--color-accent-*` → `--brand-*`, `--color-neutral-*` → `--sand-*`).
+  Useful as a naming cross-reference or for re-deriving the Tailwind config
+  from scratch.
+- `MAPPING.md` — the old-shadcn-token → new-token table this implementation
+  was built from.
+
+The rest of that design handoff (the two `.dc.html` prototypes, `sr-*.css`,
+`ds-*.css`/`pal-*.css` explorations, `support.js`) wasn't kept — they need a
+~66KB prototype runtime to render at all, they're explicitly marked
+reference-only/do-not-port in the handoff's own README, and everything they
+show is now either implemented (and better documented here) or superseded.
 
 ## Screens covered by the original design brief
 My Leagues, League Hub, Round detail, Vote, Leaderboard, and the public

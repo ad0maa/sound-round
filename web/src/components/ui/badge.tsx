@@ -11,12 +11,15 @@ const badgeVariants = cva(
     variants: {
       variant: {
         // tag-accent
-        default: 'bg-brand-100 text-brand-800',
+        default:
+          'bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-100',
         // tag-accent-2
-        secondary: 'bg-brand2-100 text-brand2-800',
+        secondary:
+          'bg-brand2-100 text-brand2-800 dark:bg-brand2-900 dark:text-brand2-100',
         destructive: 'bg-destructive/15 text-destructive',
         // tag-neutral
-        outline: 'bg-sand-100 text-sand-800',
+        outline:
+          'bg-sand-100 text-sand-800 dark:bg-sand-800 dark:text-sand-100',
       },
     },
     defaultVariants: {

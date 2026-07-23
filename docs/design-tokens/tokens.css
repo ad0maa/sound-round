@@ -1,0 +1,114 @@
+/* SoundRound tokens — drop into web/src/index.css. Light on :root, dark on .dark (or [data-theme=dark]).
+   Apply an accent by adding a theme class (.t-cherry default, .t-grape, .t-plum, .t-marigold, .t-terracotta, .t-teal) to <html> or the app root. */
+@import url("https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;500;600;700&display=swap");
+:root{
+  --color-bg:#f6ece0; --color-surface:#ece0cd; --color-text:#2a221f;
+  --color-divider:color-mix(in srgb,#2a221f 16%,transparent);
+  --color-neutral-100:#f9f4ed;
+  --color-neutral-200:#eee7db;
+  --color-neutral-300:#dcd3c4;
+  --color-neutral-400:#c0b6a5;
+  --color-neutral-500:#a19786;
+  --color-neutral-600:#82796a;
+  --color-neutral-700:#645c50;
+  --color-neutral-800:#474238;
+  --color-neutral-900:#2e2b25;
+  --font-heading:"Caprasimo",system-ui,sans-serif; --font-body:"Figtree",system-ui,sans-serif;
+  --space-1:4.4px; --space-2:8.8px; --space-3:13.2px; --space-4:17.6px; --space-6:26.4px; --space-8:35.2px;
+  --radius-sm:8px; --radius-md:16px; --radius-lg:28px;
+  --shadow-sm:0 1px 2px color-mix(in srgb,#2e2b25 14%,transparent);
+  --shadow-md:0 3px 12px color-mix(in srgb,#2e2b25 15%,transparent);
+  --shadow-lg:0 14px 36px color-mix(in srgb,#2e2b25 20%,transparent);
+}
+.t-cherry{ --color-accent:#d83f4e; --color-accent-2:#c98a3f;
+  --color-accent-100:#fff1f1; --color-accent-2-100:#fff2e6;
+  --color-accent-200:#ffdfde; --color-accent-2-200:#ffe2c5;
+  --color-accent-300:#ffc3c2; --color-accent-2-300:#fcca95;
+  --color-accent-400:#ff9495; --color-accent-2-400:#e6aa67;
+  --color-accent-500:#f75c67; --color-accent-2-500:#c8893e;
+  --color-accent-600:#cf3f4c; --color-accent-2-600:#a66c22;
+  --color-accent-700:#a42736; --color-accent-2-700:#82510a;
+  --color-accent-800:#7b1423; --color-accent-2-800:#603800;
+  --color-accent-900:#560312; --color-accent-2-900:#412400;
+}
+.t-grape{ --color-accent:#7d5cc6; --color-accent-2:#8fa350;
+  --color-accent-100:#f5f3ff; --color-accent-2-100:#f0fad7;
+  --color-accent-200:#e9e4ff; --color-accent-2-200:#e1efbf;
+  --color-accent-300:#d7ccff; --color-accent-2-300:#ccdd9f;
+  --color-accent-400:#bda7ff; --color-accent-2-400:#aec275;
+  --color-accent-500:#a181ef; --color-accent-2-500:#8fa350;
+  --color-accent-600:#8264c9; --color-accent-2-600:#728335;
+  --color-accent-700:#6449a0; --color-accent-2-700:#566520;
+  --color-accent-800:#483278; --color-accent-2-800:#3d490f;
+  --color-accent-900:#301e55; --color-accent-2-900:#273002;
+}
+.t-plum{ --color-accent:#b34a6d; --color-accent-2:#7f9463;
+  --color-accent-100:#fff1f4; --color-accent-2-100:#eff9e3;
+  --color-accent-200:#ffdee6; --color-accent-2-200:#e0eecf;
+  --color-accent-300:#ffc0d0; --color-accent-2-300:#cadcb5;
+  --color-accent-400:#fb93b1; --color-accent-2-400:#abc091;
+  --color-accent-500:#dd7092; --color-accent-2-500:#8ca170;
+  --color-accent-600:#b85474; --color-accent-2-600:#6f8255;
+  --color-accent-700:#913c58; --color-accent-2-700:#53643d;
+  --color-accent-800:#6c273e; --color-accent-2-800:#3b4828;
+  --color-accent-900:#4b1528; --color-accent-2-900:#252f17;
+}
+.t-marigold{ --color-accent:#d98828; --color-accent-2:#2f8f83;
+  --color-accent-100:#fff2e7; --color-accent-2-100:#dafef7;
+  --color-accent-200:#ffe2c7; --color-accent-2-200:#c2f4eb;
+  --color-accent-300:#ffc893; --color-accent-2-300:#a2e3d9;
+  --color-accent-400:#f1a455; --color-accent-2-400:#77c9bd;
+  --color-accent-500:#d48320; --color-accent-2-500:#4eab9e;
+  --color-accent-600:#ae6700; --color-accent-2-600:#328b7f;
+  --color-accent-700:#864e00; --color-accent-2-700:#1a6b62;
+  --color-accent-800:#623700; --color-accent-2-800:#074e46;
+  --color-accent-900:#422300; --color-accent-2-900:#00342e;
+}
+.t-terracotta{ --color-accent:#c67139; --color-accent-2:#7a8a5e;
+  --color-accent-100:#fff2ea; --color-accent-2-100:#f1f8e4;
+  --color-accent-200:#ffe1d0; --color-accent-2-200:#e2edd1;
+  --color-accent-300:#ffc6a5; --color-accent-2-300:#cddab7;
+  --color-accent-400:#f3a16f; --color-accent-2-400:#afbf94;
+  --color-accent-500:#d67f48; --color-accent-2-500:#8fa073;
+  --color-accent-600:#b2632e; --color-accent-2-600:#728158;
+  --color-accent-700:#8c4818; --color-accent-2-700:#56633f;
+  --color-accent-800:#683108; --color-accent-2-800:#3d472b;
+  --color-accent-900:#481d00; --color-accent-2-900:#272f18;
+}
+.t-teal{ --color-accent:#2f8f86; --color-accent-2:#e2624a;
+  --color-accent-100:#dafef9; --color-accent-2-100:#fff1ee;
+  --color-accent-200:#c2f4ed; --color-accent-2-200:#ffe0d9;
+  --color-accent-300:#a2e3db; --color-accent-2-300:#ffc4b7;
+  --color-accent-400:#77c9bf; --color-accent-2-400:#ff9781;
+  --color-accent-500:#4eaaa1; --color-accent-2-500:#ec6b53;
+  --color-accent-600:#328a82; --color-accent-2-600:#c54f39;
+  --color-accent-700:#1a6b64; --color-accent-2-700:#9d3624;
+  --color-accent-800:#074d48; --color-accent-2-800:#752213;
+  --color-accent-900:#00342f; --color-accent-2-900:#521005;
+}
+
+/* SoundRound — dark layer for the Organic theme. Add `dark` to the :root root. */
+.dark {
+  --color-bg: #1e1815;
+  --color-surface: #29211d;
+  --color-text: #f2e8db;
+  --color-divider: color-mix(in srgb, #f2e8db 16%, transparent);
+  --shadow-sm: 0 0 0 1px rgba(255,255,255,.06);
+  --shadow-md: 0 0 0 1px rgba(255,255,255,.08), 0 8px 24px rgba(0,0,0,.5);
+  --shadow-lg: 0 0 0 1px rgba(255,255,255,.10), 0 18px 44px rgba(0,0,0,.6);
+}
+/* Tinted fills flip from the light ramp steps to the dark ones so they read on the dark ground.
+   (No ramp values change — only which step each surface uses.) */
+.dark .tag-accent   { background: var(--color-accent-900);   color: var(--color-accent-100); }
+.dark .tag-accent-2 { background: var(--color-accent-2-900); color: var(--color-accent-2-100); }
+.dark .tag-neutral  { background: var(--color-neutral-800);  color: var(--color-neutral-100); }
+.dark .navlink.active { background: var(--color-accent-900); color: var(--color-accent-100); }
+.dark .av           { background: var(--color-accent-800);   color: var(--color-accent-200); }
+.dark .rnum-done    { background: var(--color-accent-2-800); color: var(--color-accent-2-100); }
+.dark .rnum-up      { background: var(--color-neutral-800);  color: var(--color-neutral-300); }
+.dark .stepbtn      { background: var(--color-surface); }
+/* Row/section highlight helper — accent tint that adapts to theme. */
+.hl { background: var(--color-accent-100); }
+.dark .hl { background: var(--color-accent-900); }
+
+[data-theme="dark"]{ --color-bg:#1e1815; --color-surface:#29211d; --color-text:#f2e8db; --color-divider:color-mix(in srgb,#f2e8db 16%,transparent); }
