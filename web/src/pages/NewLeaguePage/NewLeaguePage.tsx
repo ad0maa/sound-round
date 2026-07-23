@@ -53,6 +53,7 @@ const NewLeaguePage = () => {
   const [uniqueArtists, setUniqueArtists] = useState(false)
   const [totalRounds, setTotalRounds] = useState(5)
   const [maxPlayers, setMaxPlayers] = useState(20)
+  const [isPublic, setIsPublic] = useState(false)
   const [submissionDeadlineHours, setSubmissionDeadlineHours] = useState(72)
   const [votingDeadlineHours, setVotingDeadlineHours] = useState(48)
   const [startsAt, setStartsAt] = useState('')
@@ -96,6 +97,7 @@ const NewLeaguePage = () => {
         input: {
           name: name.trim(),
           description: description.trim() || null,
+          isPublic,
           upvotesPerRound,
           downvotesEnabled,
           downvotesPerRound: downvotesEnabled ? downvotesPerRound : 0,
@@ -161,6 +163,22 @@ const NewLeaguePage = () => {
                     placeholder="What's this league about?"
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="isPublic">Public league</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {isPublic
+                        ? 'Listed on Browse Leagues — anyone can jump in.'
+                        : 'Invite-only — share the invite link to add players.'}
+                    </p>
+                  </div>
+                  <Switch
+                    id="isPublic"
+                    checked={isPublic}
+                    onCheckedChange={setIsPublic}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="startsAt">Scheduled start (optional)</Label>
                   <Input

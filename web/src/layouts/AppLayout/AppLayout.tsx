@@ -1,4 +1,4 @@
-import { Music, Trophy, LogOut, Plus } from 'lucide-react'
+import { Music, Trophy, LogOut, Plus, Globe } from 'lucide-react'
 
 import { Link, routes, useLocation } from '@cedarjs/router'
 import { Toaster } from '@cedarjs/web/toast'
@@ -95,6 +95,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               'New League',
               Plus,
               pathname === routes.newLeague()
+            )}
+            {navItem(
+              routes.browseLeagues(),
+              'Browse Leagues',
+              Globe,
+              pathname === routes.browseLeagues()
             )}
             <Separator className="my-2" />
             <Button
