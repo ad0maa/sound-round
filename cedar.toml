@@ -9,7 +9,8 @@
 # https://cedarjs.com/docs/app-configuration-cedar-toml
 
 [web]
-  title = "Cedar App"
+  title = "SoundRound"
+  titleTemplate = "%PageTitle | %AppTitle"
   port = 8910
   apiUrl = "/api"
   includeEnvironmentVariables = [
