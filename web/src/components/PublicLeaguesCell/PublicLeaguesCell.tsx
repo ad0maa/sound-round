@@ -78,8 +78,10 @@ const JOIN_LEAGUE = gql`
 
 export const Success = ({
   publicLeagues,
+  isAuthenticated = true,
 }: {
   publicLeagues: PublicLeaguesQuery['publicLeagues']
+  isAuthenticated?: boolean
 }) => {
   const [joinLeague, { loading }] = useMutation(JOIN_LEAGUE, {
     onCompleted: (data) => navigate(routes.league({ id: data.joinLeague.id })),
@@ -117,7 +119,11 @@ export const Success = ({
               <p className="text-xs text-muted-foreground">
                 Created by {league.creator.displayName}
               </p>
-              {isMember ? (
+              {!isAuthenticated ? (
+                <Button asChild size="sm" className="w-full">
+                  <Link to={routes.login()}>Log in to join</Link>
+                </Button>
+              ) : isMember ? (
                 <Button asChild size="sm" className="w-full">
                   <Link to={routes.league({ id: league.id })}>View League</Link>
                 </Button>

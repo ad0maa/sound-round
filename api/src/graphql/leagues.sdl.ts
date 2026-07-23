@@ -43,7 +43,7 @@ export const schema = gql`
 
   type Query {
     myLeagues: [League!]! @requireAuth
-    publicLeagues: [League!]! @requireAuth
+    publicLeagues: [League!]! @skipAuth
     league(id: String!): League! @requireAuth
   }
 

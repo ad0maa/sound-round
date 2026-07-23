@@ -229,6 +229,11 @@ export const League: LeagueRelationResolvers = {
     return db.leagueMember.count({ where: { leagueId: root?.id } })
   },
   myRole: async (_obj, { root }) => {
+    // publicLeagues is browsable without auth, so this may run with no
+    // currentUser — treat that as "not a member" rather than throwing.
+    if (!context.currentUser) {
+      return null
+    }
     const member = await db.leagueMember.findUnique({
       where: {
         leagueId_userId: { leagueId: root?.id, userId: currentUserId() },

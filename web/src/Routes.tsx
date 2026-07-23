@@ -21,13 +21,16 @@ const Routes = () => {
       <Route path="/forgot-password" page={ForgotPasswordPage} name="forgotPassword" />
       <Route path="/reset-password" page={ResetPasswordPage} name="resetPassword" />
 
+      {/* Public landing page: browsable without auth so visitors can see
+          public leagues and try the demo before signing in. */}
+      <Route path="/" page={HomePage} name="home" />
+
       {/* Join lives outside the layout: it's the invite-link landing page */}
       <PrivateSet unauthenticated="login">
         <Route path="/join/{code}" page={JoinPage} name="join" />
       </PrivateSet>
 
       <PrivateSet unauthenticated="login" wrap={AppLayout}>
-        <Route path="/" page={HomePage} name="home" />
         <Route path="/leagues" page={LeaguesPage} name="leagues" />
         <Route path="/leagues/new" page={NewLeaguePage} name="newLeague" />
         <Route path="/leagues/browse" page={BrowseLeaguesPage} name="browseLeagues" />
