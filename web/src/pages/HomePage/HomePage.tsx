@@ -10,6 +10,7 @@ import { useAuth } from 'src/auth'
 import PublicLeaguesCell from 'src/components/PublicLeaguesCell'
 import { Badge } from 'src/components/ui/badge'
 import { Button, buttonVariants } from 'src/components/ui/button'
+import { toastOptions } from 'src/lib/toastOptions'
 
 const HomePage = () => {
   const { isAuthenticated, signUp } = useAuth()
@@ -50,7 +51,10 @@ const HomePage = () => {
   return (
     <>
       <Metadata title="SoundRound" description="Music league with friends" />
-      <Toaster toastOptions={{ duration: 6000 }} />
+      <Toaster
+        position="top-right"
+        toastOptions={{ ...toastOptions, duration: 6000 }}
+      />
 
       <main className="flex min-h-screen flex-col bg-background">
         <header className="flex items-center justify-between px-5 py-5 nav:px-8">

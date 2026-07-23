@@ -1,4 +1,4 @@
-import { Globe, Music, Plus, Settings, Trophy } from 'lucide-react'
+import { Globe, LogOut, Music, Plus, Settings, Trophy } from 'lucide-react'
 
 import { Link, routes, useLocation } from '@cedarjs/router'
 import { Toaster } from '@cedarjs/web/toast'
@@ -6,6 +6,7 @@ import { Toaster } from '@cedarjs/web/toast'
 import { useAuth } from 'src/auth'
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import { Badge } from 'src/components/ui/badge'
+import { toastOptions } from 'src/lib/toastOptions'
 import { cn } from 'src/lib/utils'
 
 type AppLayoutProps = {
@@ -22,7 +23,7 @@ const Brand = ({ size = 34 }: { size?: number }) => (
 )
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const { currentUser } = useAuth()
+  const { currentUser, logOut } = useAuth()
   const { pathname } = useLocation()
 
   const navItems = [
@@ -49,7 +50,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Toaster toastOptions={{ duration: 5000 }} />
+      <Toaster
+        position="top-right"
+        toastOptions={{ ...toastOptions, duration: 5000 }}
+      />
 
       {isDemo && (
         <div className="flex flex-none items-center justify-center gap-2 bg-brand-100 px-4 py-2 text-center text-sm text-brand-800">
@@ -94,25 +98,35 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             )
           })}
 
-          <Link
-            to={routes.settings()}
-            className="mt-auto flex items-center gap-2.5 rounded-2xl px-2 py-2 transition-colors hover:bg-foreground/[0.06]"
-          >
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="text-[13px]">
-                {initials || '??'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex min-w-0 flex-col">
-              <span className="truncate text-[13px] font-semibold">
-                {displayName}
-              </span>
-              <span className="truncate text-[11px] text-muted-foreground">
-                {(currentUser?.email as string) ?? ''}
-              </span>
-            </div>
-            <Settings className="ml-auto h-4 w-4 flex-none text-muted-foreground" />
-          </Link>
+          <div className="mt-auto flex items-center gap-1 px-1">
+            <Link
+              to={routes.settings()}
+              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl px-1.5 py-2 transition-colors hover:bg-foreground/[0.06]"
+            >
+              <Avatar className="h-9 w-9">
+                <AvatarFallback className="text-[13px]">
+                  {initials || '??'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-[13px] font-semibold">
+                  {displayName}
+                </span>
+                <span className="truncate text-[11px] text-muted-foreground">
+                  {(currentUser?.email as string) ?? ''}
+                </span>
+              </div>
+            </Link>
+            <button
+              type="button"
+              onClick={() => logOut()}
+              title="Log out"
+              aria-label="Log out"
+              className="grid size-8 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </aside>
 
         {/* Mobile top bar */}

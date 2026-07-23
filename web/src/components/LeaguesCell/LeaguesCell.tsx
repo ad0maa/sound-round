@@ -61,7 +61,7 @@ export const Success = ({
   myLeagues: MyLeaguesQuery['myLeagues']
 }) => {
   return (
-    <div className="grid grid-cols-1 gap-[18px] nav:grid-cols-3">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-[18px]">
       {myLeagues.map((league) => (
         <Link key={league.id} to={routes.league({ id: league.id })}>
           <Card className="h-full cursor-pointer transition-shadow hover:shadow-md">

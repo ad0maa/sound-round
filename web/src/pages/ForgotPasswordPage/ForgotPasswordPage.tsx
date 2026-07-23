@@ -6,6 +6,7 @@ import { Metadata } from '@cedarjs/web'
 import { toast, Toaster } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
+import { toastOptions } from 'src/lib/toastOptions'
 
 const ForgotPasswordPage = () => {
   const { isAuthenticated, forgotPassword } = useAuth()
@@ -42,7 +43,10 @@ const ForgotPasswordPage = () => {
       <Metadata title="Forgot Password" />
 
       <main className="rw-main">
-        <Toaster toastOptions={{ className: 'rw-toast', duration: 6000 }} />
+        <Toaster
+          position="top-right"
+          toastOptions={{ ...toastOptions, duration: 6000 }}
+        />
         <div className="rw-scaffold rw-login-container">
           <div className="rw-segment">
             <header className="rw-segment-header">

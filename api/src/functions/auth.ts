@@ -1,3 +1,4 @@
+import { Prisma } from 'api/db/generated/prisma'
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda'
 
 import { DbAuthHandler } from '@cedarjs/auth-dbauth-api'
@@ -6,6 +7,7 @@ import type { DbAuthHandlerOptions, UserType } from '@cedarjs/auth-dbauth-api'
 import { cookieName } from 'src/lib/auth'
 import { db } from 'src/lib/db'
 import { cleanupExpiredDemoUsers, DEMO_SESSION_MS } from 'src/lib/demoUsers'
+import { sendPasswordResetEmail } from 'src/lib/mailer'
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -26,13 +28,8 @@ export const handler = async (
     // so don't include anything you wouldn't want prying eyes to see. The
     // `user` here has been sanitized to only include the fields listed in
     // `allowedUserFields` so it should be safe to return as-is.
-    handler: (user, _resetToken) => {
-      // TODO: Send an email/message to the user
-      // The message should include a link to reset their password with the
-      // `resetToken`. The URL should look something like:
-      // `http://localhost:8920/reset-password?resetToken=${resetToken}`
-      // When you implement this, change `_resetToken` to `resetToken` in the
-      // function arguments above.
+    handler: async (user, resetToken) => {
+      await sendPasswordResetEmail(user.email, resetToken)
 
       return user
     },
@@ -136,21 +133,54 @@ export const handler = async (
         await cleanupExpiredDemoUsers()
       }
 
-      return db.user.create({
-        data: {
-          email: username,
-          hashedPassword: hashedPassword,
-          salt: salt,
-          displayName:
-            userAttributes?.displayName ||
-            (isDemo
-              ? `Guest ${Math.floor(1000 + Math.random() * 9000)}`
-              : username.split('@')[0]),
-          isDemo,
-          // Server controls the expiry — never trust a client-supplied value.
-          demoExpiresAt: isDemo ? new Date(Date.now() + DEMO_SESSION_MS) : null,
-        },
-      })
+      const createUser = (displayName: string) =>
+        db.user.create({
+          data: {
+            email: username,
+            hashedPassword: hashedPassword,
+            salt: salt,
+            displayName,
+            isDemo,
+            // Server controls the expiry — never trust a client-supplied value.
+            demoExpiresAt: isDemo
+              ? new Date(Date.now() + DEMO_SESSION_MS)
+              : null,
+          },
+        })
+
+      const isUniqueViolation = (error: unknown) =>
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+
+      const requestedDisplayName = userAttributes?.displayName?.trim()
+
+      // A user-chosen name (real signup) — displayName is unique, so surface
+      // a friendly error instead of the raw constraint violation.
+      if (requestedDisplayName) {
+        try {
+          return await createUser(requestedDisplayName)
+        } catch (error) {
+          if (isUniqueViolation(error)) {
+            throw new Error('That display name is already taken')
+          }
+          throw error
+        }
+      }
+
+      // No name supplied (demo, or a real signup that skipped it) — generate
+      // one and retry on the rare random collision.
+      const generateName = isDemo
+        ? () => `Guest ${Math.floor(1000 + Math.random() * 9000)}`
+        : () => username.split('@')[0]
+
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          return await createUser(generateName())
+        } catch (error) {
+          if (!isUniqueViolation(error) || attempt === 4) throw error
+        }
+      }
+      throw new Error('Could not generate a unique display name')
     },
 
     // Include any format checks for password here. Return `true` if the

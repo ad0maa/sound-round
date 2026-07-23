@@ -31,6 +31,7 @@ import {
   labelClassName,
   labelErrorClassName,
 } from 'src/lib/formStyles'
+import { toastOptions } from 'src/lib/toastOptions'
 
 const LoginPage = () => {
   const { isAuthenticated, logIn, signUp } = useAuth()
@@ -89,7 +90,10 @@ const LoginPage = () => {
       <Metadata title="Login" />
 
       <main className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Toaster toastOptions={{ duration: 6000 }} />
+        <Toaster
+          position="top-right"
+          toastOptions={{ ...toastOptions, duration: 6000 }}
+        />
         <div className="w-full max-w-md space-y-4">
           <div className="flex items-center justify-center gap-2.5">
             <span className="grid size-9 flex-none place-items-center rounded-full bg-brand-600 text-white">

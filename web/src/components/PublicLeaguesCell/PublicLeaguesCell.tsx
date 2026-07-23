@@ -79,7 +79,7 @@ export const Success = ({
   })
 
   return (
-    <div className="grid grid-cols-1 gap-[18px] nav:grid-cols-3">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-[18px]">
       {publicLeagues.map((league) => {
         const isMember = league.myRole != null
         const isFull = (league.memberCount ?? 0) >= league.maxPlayers
