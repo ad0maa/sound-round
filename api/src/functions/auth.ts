@@ -4,8 +4,8 @@ import { DbAuthHandler } from '@cedarjs/auth-dbauth-api'
 import type { DbAuthHandlerOptions, UserType } from '@cedarjs/auth-dbauth-api'
 
 import { cookieName } from 'src/lib/auth'
-import { cleanupExpiredDemoUsers, DEMO_SESSION_MS } from 'src/lib/demoUsers'
 import { db } from 'src/lib/db'
+import { cleanupExpiredDemoUsers, DEMO_SESSION_MS } from 'src/lib/demoUsers'
 
 export const handler = async (
   event: APIGatewayProxyEvent,

@@ -1,4 +1,4 @@
-import type { Platform } from 'api/db/generated/prisma/client.mts'
+import type { Platform } from 'api/db/generated/prisma'
 
 /** Normalized track shape shared by all three platform clients. */
 export interface TrackResult {

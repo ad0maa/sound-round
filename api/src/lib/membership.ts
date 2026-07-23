@@ -1,4 +1,4 @@
-import type { LeagueMember, Role } from 'api/db/generated/prisma/client.mts'
+import type { LeagueMember, Role } from 'api/db/generated/prisma'
 
 import { ForbiddenError } from '@cedarjs/graphql-server'
 

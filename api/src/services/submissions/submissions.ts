@@ -1,4 +1,4 @@
-import type { Submission as PrismaSubmission } from 'api/db/generated/prisma/client.mts'
+import type { Submission as PrismaSubmission } from 'api/db/generated/prisma'
 import type {
   QueryResolvers,
   MutationResolvers,

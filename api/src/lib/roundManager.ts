@@ -1,4 +1,4 @@
-import type { League, Round } from 'api/db/generated/prisma/client.mts'
+import type { League, Round } from 'api/db/generated/prisma'
 
 import { db } from './db.js'
 

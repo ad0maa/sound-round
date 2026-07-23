@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from 'api/db/generated/prisma/client.mts'
+import { PrismaClient } from 'api/db/generated/prisma'
 
 import { emitLogLevels, handlePrismaLogging } from '@cedarjs/api/logger'
 
