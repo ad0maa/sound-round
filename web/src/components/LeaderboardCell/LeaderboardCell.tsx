@@ -8,7 +8,6 @@ import { Link, routes } from '@cedarjs/router'
 import type { TypedDocumentNode } from '@cedarjs/web'
 
 import { useAuth } from 'src/auth'
-import PageContainer from 'src/components/PageContainer/PageContainer'
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import { Button } from 'src/components/ui/button'
 import { Card } from 'src/components/ui/card'
@@ -37,25 +36,19 @@ export const QUERY: TypedDocumentNode<
 `
 
 export const Loading = () => (
-  <PageContainer wide={false}>
-    <p className="text-muted-foreground">Loading leaderboard…</p>
-  </PageContainer>
+  <p className="text-muted-foreground">Loading leaderboard…</p>
 )
 
 export const Failure = ({ error }: { error?: { message: string } }) => (
-  <PageContainer wide={false}>
-    <p className="text-destructive">Error: {error?.message}</p>
-  </PageContainer>
+  <p className="text-destructive">Error: {error?.message}</p>
 )
 
 export const Empty = () => (
-  <PageContainer wide={false}>
-    <Card className="py-8 text-center">
-      <p className="text-muted-foreground">
-        No results yet — the leaderboard fills in once a round is complete.
-      </p>
-    </Card>
-  </PageContainer>
+  <Card className="py-8 text-center">
+    <p className="text-muted-foreground">
+      No results yet — the leaderboard fills in once a round is complete.
+    </p>
+  </Card>
 )
 
 const initialsOf = (name: string) =>
@@ -82,7 +75,7 @@ export const Success = ({
     : []
 
   return (
-    <PageContainer wide={false}>
+    <>
       <Button asChild variant="ghost" className="mb-3.5 -ml-1">
         <Link to={routes.league({ id: league.id })}>
           <ArrowLeft className="h-4 w-4" />
@@ -167,6 +160,6 @@ export const Success = ({
           )
         })}
       </Card>
-    </PageContainer>
+    </>
   )
 }

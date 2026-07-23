@@ -101,11 +101,11 @@ const HomePage = () => {
         <section id="public-leagues" className="flex-1 bg-card/60 pb-10 pt-8">
           <div className="mx-auto w-full max-w-[960px] px-5 nav:px-10">
             <h2 className="text-[24px]">Browse public leagues</h2>
-            <p className="mb-2 text-sm text-muted-foreground">
+            <p className="mb-4 text-sm text-muted-foreground">
               See what&apos;s already live — log in or try the demo to join.
             </p>
+            <PublicLeaguesCell isAuthenticated={false} />
           </div>
-          <PublicLeaguesCell isAuthenticated={false} />
         </section>
       </main>
     </>

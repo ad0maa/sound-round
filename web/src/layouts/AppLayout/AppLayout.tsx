@@ -1,10 +1,9 @@
-import { Globe, LogOut, Music, Plus, Trophy } from 'lucide-react'
+import { Globe, Music, Plus, Settings, Trophy } from 'lucide-react'
 
 import { Link, routes, useLocation } from '@cedarjs/router'
 import { Toaster } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
-import ThemeSwitcher from 'src/components/ThemeSwitcher/ThemeSwitcher'
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import { Badge } from 'src/components/ui/badge'
 import { cn } from 'src/lib/utils'
@@ -23,7 +22,7 @@ const Brand = ({ size = 34 }: { size?: number }) => (
 )
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const { currentUser, logOut } = useAuth()
+  const { currentUser } = useAuth()
   const { pathname } = useLocation()
 
   const navItems = [
@@ -49,11 +48,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     : null
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Toaster toastOptions={{ duration: 5000 }} />
 
       {isDemo && (
-        <div className="flex items-center justify-center gap-2 bg-brand-100 px-4 py-2 text-sm text-brand-800">
+        <div className="flex flex-none items-center justify-center gap-2 bg-brand-100 px-4 py-2 text-center text-sm text-brand-800">
           <Badge>Demo Mode</Badge>
           <span>
             You&apos;re exploring with a temporary account — your data clears
@@ -65,9 +64,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
       )}
 
-      <div className="flex min-h-screen flex-col nav:flex-row">
+      <div className="flex flex-1 flex-col nav:flex-row">
         {/* Desktop sidebar */}
-        <aside className="sticky top-0 hidden h-screen w-[244px] flex-none flex-col gap-1 bg-card p-4 nav:flex">
+        <aside className="sticky top-0 hidden max-h-screen w-[244px] flex-none flex-col gap-1 overflow-y-auto bg-card p-4 nav:flex">
           <Link
             to={routes.leagues()}
             className="mb-3 flex items-center gap-2.5 px-2 py-1.5"
@@ -95,46 +94,38 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             )
           })}
 
-          <div className="mt-auto flex flex-col gap-3">
-            <div className="rounded-2xl bg-background p-3">
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Accent
-              </div>
-              <ThemeSwitcher />
+          <Link
+            to={routes.settings()}
+            className="mt-auto flex items-center gap-2.5 rounded-2xl px-2 py-2 transition-colors hover:bg-foreground/[0.06]"
+          >
+            <Avatar className="h-9 w-9">
+              <AvatarFallback className="text-[13px]">
+                {initials || '??'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate text-[13px] font-semibold">
+                {displayName}
+              </span>
+              <span className="truncate text-[11px] text-muted-foreground">
+                {(currentUser?.email as string) ?? ''}
+              </span>
             </div>
-
-            <div className="flex items-center gap-2.5 px-2 py-1">
-              <Avatar className="h-9 w-9">
-                <AvatarFallback className="text-[13px]">
-                  {initials || '??'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex min-w-0 flex-col">
-                <span className="truncate text-[13px] font-semibold">
-                  {displayName}
-                </span>
-                <span className="truncate text-[11px] text-muted-foreground">
-                  {(currentUser?.email as string) ?? ''}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => logOut()}
-                title="Log out"
-                aria-label="Log out"
-                className="ml-auto grid size-8 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+            <Settings className="ml-auto h-4 w-4 flex-none text-muted-foreground" />
+          </Link>
         </aside>
 
         {/* Mobile top bar */}
         <div className="sticky top-0 z-20 flex items-center gap-2.5 bg-card px-4 py-3 nav:hidden">
           <Brand size={30} />
           <span className="font-heading text-base">SoundRound</span>
-          <ThemeSwitcher swatchSize={20} className="ml-auto gap-1.5" />
+          <Link
+            to={routes.settings()}
+            aria-label="Settings"
+            className="ml-auto grid size-9 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06]"
+          >
+            <Settings className="h-[18px] w-[18px]" />
+          </Link>
         </div>
 
         {/* Main content */}

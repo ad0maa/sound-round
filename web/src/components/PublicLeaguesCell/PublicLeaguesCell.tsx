@@ -36,30 +36,26 @@ export const QUERY: TypedDocumentNode<
 `
 
 export const Loading = () => (
-  <p className="px-4 text-muted-foreground nav:px-10">
-    Loading public leagues…
-  </p>
+  <p className="text-muted-foreground">Loading public leagues…</p>
 )
 
 export const Failure = ({ error }: { error?: { message: string } }) => (
-  <p className="px-4 text-destructive nav:px-10">Error: {error?.message}</p>
+  <p className="text-destructive">Error: {error?.message}</p>
 )
 
 export const Empty = () => (
-  <div className="px-4 nav:px-10">
-    <Card className="items-center gap-3 py-12 text-center">
-      <Globe className="mx-auto h-10 w-10 text-muted-foreground" />
-      <p className="text-muted-foreground">
-        No public leagues yet — make yours public when you create one.
-      </p>
-      <Button asChild>
-        <Link to={routes.newLeague()}>
-          <Plus className="h-4 w-4" />
-          New League
-        </Link>
-      </Button>
-    </Card>
-  </div>
+  <Card className="items-center gap-3 py-12 text-center">
+    <Globe className="mx-auto h-10 w-10 text-muted-foreground" />
+    <p className="text-muted-foreground">
+      No public leagues yet — make yours public when you create one.
+    </p>
+    <Button asChild>
+      <Link to={routes.newLeague()}>
+        <Plus className="h-4 w-4" />
+        New League
+      </Link>
+    </Button>
+  </Card>
 )
 
 const JOIN_LEAGUE = gql`
@@ -83,7 +79,7 @@ export const Success = ({
   })
 
   return (
-    <div className="grid grid-cols-1 gap-[18px] px-4 nav:grid-cols-3 nav:px-10">
+    <div className="grid grid-cols-1 gap-[18px] nav:grid-cols-3">
       {publicLeagues.map((league) => {
         const isMember = league.myRole != null
         const isFull = (league.memberCount ?? 0) >= league.maxPlayers
