@@ -32,6 +32,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     { to: routes.browseLeagues(), label: 'Browse', icon: Globe },
   ]
 
+  const handleLogOut = () => {
+    if (window.confirm('Log out of SoundRound?')) {
+      logOut()
+    }
+  }
+
   const displayName = (currentUser?.displayName as string) ?? ''
   const initials = displayName
     .split(' ')
@@ -119,7 +125,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </Link>
             <button
               type="button"
-              onClick={() => logOut()}
+              onClick={handleLogOut}
               title="Log out"
               aria-label="Log out"
               className="grid size-8 flex-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"

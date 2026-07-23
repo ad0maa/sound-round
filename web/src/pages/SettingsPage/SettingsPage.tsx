@@ -124,7 +124,9 @@ const SettingsPage = () => {
             <Button
               variant="secondary"
               className="w-fit text-destructive"
-              onClick={() => logOut()}
+              onClick={() => {
+                if (window.confirm('Log out of SoundRound?')) logOut()
+              }}
             >
               <LogOut className="h-4 w-4" />
               Log out
