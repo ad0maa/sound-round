@@ -4,12 +4,16 @@ import { UserInputError } from '@cedarjs/graphql-server'
 
 import { db } from 'src/lib/db'
 import { requireMembership } from 'src/lib/membership'
-import { checkAutoAdvanceVoting } from 'src/lib/roundManager'
+import {
+  checkAutoAdvanceVoting,
+  settleLeagueRounds,
+  settleRound,
+} from 'src/lib/roundManager'
 
 const currentUserId = () => context.currentUser.id as string
 
 export const myVotes: QueryResolvers['myVotes'] = async ({ roundId }) => {
-  const round = await db.round.findUnique({ where: { id: roundId } })
+  const round = await settleRound(roundId)
   if (!round) {
     throw new UserInputError('Round not found')
   }
@@ -24,7 +28,9 @@ export const castVotes: MutationResolvers['castVotes'] = async ({
   roundId,
   votes,
 }) => {
-  const round = await db.round.findUnique({ where: { id: roundId } })
+  // Settling first means an expired voting window is rejected by the state
+  // guard below rather than silently accepting late votes.
+  const round = await settleRound(roundId)
   if (!round) {
     throw new UserInputError('Round not found')
   }
@@ -116,6 +122,8 @@ export const leagueLeaderboard: QueryResolvers['leagueLeaderboard'] = async ({
   leagueId,
 }) => {
   await requireMembership(leagueId)
+  // A just-expired voting round should count in the standings.
+  await settleLeagueRounds(leagueId)
 
   const members = await db.leagueMember.findMany({
     where: { leagueId },

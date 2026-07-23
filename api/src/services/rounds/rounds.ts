@@ -8,14 +8,19 @@ import { UserInputError } from '@cedarjs/graphql-server'
 
 import { db } from 'src/lib/db'
 import { requireLeagueRole, requireMembership } from 'src/lib/membership'
+import {
+  advanceToResults,
+  advanceToVoting,
+  openRoundForSubmissions,
+  settleLeagueRounds,
+  settleRound,
+} from 'src/lib/roundManager'
 
 const STATE_ORDER = ['upcoming', 'submitting', 'voting', 'results'] as const
 
-const hoursFromNow = (hours: number) =>
-  new Date(Date.now() + hours * 60 * 60 * 1000)
-
 export const rounds: QueryResolvers['rounds'] = async ({ leagueId }) => {
   await requireMembership(leagueId)
+  await settleLeagueRounds(leagueId)
 
   return db.round.findMany({
     where: { leagueId },
@@ -24,7 +29,7 @@ export const rounds: QueryResolvers['rounds'] = async ({ leagueId }) => {
 }
 
 export const round: QueryResolvers['round'] = async ({ id }) => {
-  const found = await db.round.findUnique({ where: { id } })
+  const found = await settleRound(id)
   if (!found) {
     throw new UserInputError('Round not found')
   }
@@ -37,7 +42,7 @@ export const round: QueryResolvers['round'] = async ({ id }) => {
 export const roundProgress: QueryResolvers['roundProgress'] = async ({
   roundId,
 }) => {
-  const found = await db.round.findUnique({ where: { id: roundId } })
+  const found = await settleRound(roundId)
   if (!found) {
     throw new UserInputError('Round not found')
   }
@@ -91,46 +96,79 @@ export const createRound: MutationResolvers['createRound'] = async ({
   })
   const roundNumber = (maxRound._max.roundNumber ?? 0) + 1
 
-  // Fix for the original app's known bug: round 1 was created in `upcoming`
-  // and nothing ever flipped it to `submitting` (leagues stalled forever).
-  // Rounds >= 2 stay `upcoming` and are opened by maybeOpenNextRound.
-  const firstRound = roundNumber === 1
+  // Appending a round past totalRounds would otherwise never open —
+  // maybeOpenNextRound stops at totalRounds — so grow the league to fit.
+  const created = await db.$transaction(async (tx) => {
+    if (roundNumber > league.totalRounds) {
+      await tx.league.update({
+        where: { id: league.id },
+        data: { totalRounds: roundNumber },
+      })
+    }
 
-  return db.round.create({
-    data: {
+    return tx.round.create({
+      data: {
+        leagueId: input.leagueId,
+        roundNumber,
+        theme: input.theme,
+        description: input.description,
+        songsPerPlayer: input.songsPerPlayer ?? 1,
+        submissionDurationHours: input.submissionDurationHours,
+        votingDurationHours: input.votingDurationHours,
+      },
+    })
+  })
+
+  // If the league is underway (some round has left `upcoming`) and no round is
+  // currently active, the game stalled at the end — open this one immediately.
+  const activeRound = await db.round.findFirst({
+    where: {
       leagueId: input.leagueId,
-      roundNumber,
-      theme: input.theme,
-      description: input.description,
-      songsPerPlayer: input.songsPerPlayer ?? 1,
-      ...(firstRound && {
-        state: 'submitting' as const,
-        submissionsOpen: new Date(),
-        submissionsClose: hoursFromNow(league.submissionDeadlineHours),
-      }),
+      state: { in: ['submitting', 'voting'] },
     },
   })
+  const started = await db.round.findFirst({
+    where: { leagueId: input.leagueId, state: { not: 'upcoming' } },
+  })
+
+  if (started && !activeRound) {
+    return openRoundForSubmissions(created, league)
+  }
+
+  return created
 }
 
 export const advanceRound: MutationResolvers['advanceRound'] = async ({
   id,
   state,
 }) => {
-  const found = await db.round.findUnique({ where: { id } })
+  const found = await settleRound(id)
   if (!found) {
     throw new UserInputError('Round not found')
   }
 
   await requireLeagueRole(found.leagueId, ['creator', 'admin'])
 
-  // Forward-only transitions
-  if (STATE_ORDER.indexOf(state) <= STATE_ORDER.indexOf(found.state)) {
+  // Single forward steps only — multi-step jumps would skip transition side
+  // effects (deadline stamps, next-round opening).
+  if (STATE_ORDER.indexOf(state) !== STATE_ORDER.indexOf(found.state) + 1) {
     throw new UserInputError(
       `Cannot transition from '${found.state}' to '${state}'`
     )
   }
 
-  return db.round.update({ where: { id }, data: { state } })
+  const league = await db.league.findUnique({ where: { id: found.leagueId } })
+
+  switch (state) {
+    case 'submitting':
+      return openRoundForSubmissions(found, league)
+    case 'voting':
+      return advanceToVoting(found, league)
+    case 'results':
+      return advanceToResults(found, league)
+    default:
+      throw new UserInputError(`Cannot transition to '${state}'`)
+  }
 }
 
 export const Round: RoundRelationResolvers = {

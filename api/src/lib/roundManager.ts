@@ -4,13 +4,151 @@ import { db } from './db.js'
 
 /**
  * Round state machine, ported from the original round_manager.py.
- * Rounds advance automatically when every league member has acted:
+ * Rounds advance when every league member has acted:
  *   submitting -> voting   (all members submitted)
  *   voting     -> results  (all members voted; next upcoming round auto-opens)
+ * or lazily when a deadline passes — settleRound/settleLeagueRounds are called
+ * at the top of round-related queries and mutations, so expired rounds advance
+ * on the next read/write without needing a background job.
+ *
+ * Transitions are optimistic compare-and-sets (updateMany filtered on the
+ * expected current state) so concurrent serverless invocations can't
+ * double-apply a transition's side effects.
  */
 
 const hoursFromNow = (hours: number) =>
   new Date(Date.now() + hours * 60 * 60 * 1000)
+
+/** Per-round duration overrides fall back to the league-level defaults. */
+const submissionHours = (league: League, round: Round) =>
+  round.submissionDurationHours ?? league.submissionDeadlineHours
+
+const votingHours = (league: League, round: Round) =>
+  round.votingDurationHours ?? league.votingDeadlineHours
+
+/** upcoming -> submitting. Returns the fresh round (unchanged if we lost the race). */
+export const openRoundForSubmissions = async (
+  round: Round,
+  league: League
+): Promise<Round> => {
+  await db.round.updateMany({
+    where: { id: round.id, state: 'upcoming' },
+    data: {
+      state: 'submitting',
+      submissionsOpen: new Date(),
+      submissionsClose: hoursFromNow(submissionHours(league, round)),
+    },
+  })
+  return db.round.findUnique({ where: { id: round.id } })
+}
+
+/** submitting -> voting. */
+export const advanceToVoting = async (
+  round: Round,
+  league: League
+): Promise<Round> => {
+  await db.round.updateMany({
+    where: { id: round.id, state: 'submitting' },
+    data: {
+      state: 'voting',
+      votingClose: hoursFromNow(votingHours(league, round)),
+    },
+  })
+  return db.round.findUnique({ where: { id: round.id } })
+}
+
+/** voting (or submitting, for empty rounds) -> results, then open the next round. */
+export const advanceToResults = async (
+  round: Round,
+  league: League
+): Promise<Round> => {
+  const { count } = await db.round.updateMany({
+    where: { id: round.id, state: { in: ['submitting', 'voting'] } },
+    data: { state: 'results' },
+  })
+  const fresh = await db.round.findUnique({ where: { id: round.id } })
+
+  // Only the invocation that won the compare-and-set opens the next round.
+  if (count > 0) {
+    await maybeOpenNextRound(league, round.roundNumber)
+  }
+
+  return fresh
+}
+
+/**
+ * Lazily apply any deadline-driven transition for a round.
+ * Returns the fresh round, or null if it doesn't exist.
+ */
+export const settleRound = async (roundId: string): Promise<Round | null> => {
+  const round = await db.round.findUnique({ where: { id: roundId } })
+  if (!round) {
+    return null
+  }
+
+  const now = new Date()
+
+  if (
+    round.state === 'submitting' &&
+    round.submissionsClose &&
+    round.submissionsClose <= now
+  ) {
+    const league = await db.league.findUnique({
+      where: { id: round.leagueId },
+    })
+    const submissionCount = await db.submission.count({ where: { roundId } })
+    // Nothing to vote on — skip straight to results so the league can't stall.
+    return submissionCount === 0
+      ? advanceToResults(round, league)
+      : advanceToVoting(round, league)
+  }
+
+  if (
+    round.state === 'voting' &&
+    round.votingClose &&
+    round.votingClose <= now
+  ) {
+    const league = await db.league.findUnique({
+      where: { id: round.leagueId },
+    })
+    return advanceToResults(round, league)
+  }
+
+  return round
+}
+
+/**
+ * Settle a league's active round (at most one exists), and open round 1 if the
+ * league's scheduled start time has passed.
+ */
+export const settleLeagueRounds = async (leagueId: string): Promise<void> => {
+  const now = new Date()
+
+  const due = await db.round.findFirst({
+    where: {
+      leagueId,
+      OR: [
+        { state: 'submitting', submissionsClose: { lte: now } },
+        { state: 'voting', votingClose: { lte: now } },
+      ],
+    },
+  })
+  if (due) {
+    await settleRound(due.id)
+    return
+  }
+
+  // Scheduled start: open round 1 once startsAt has passed.
+  const league = await db.league.findUnique({ where: { id: leagueId } })
+  if (league?.startsAt && league.startsAt <= now) {
+    const firstRound = await db.round.findUnique({
+      where: { leagueId_roundNumber: { leagueId, roundNumber: 1 } },
+    })
+    if (firstRound?.state === 'upcoming') {
+      await openRoundForSubmissions(firstRound, league)
+    }
+  }
+}
 
 /** After a submission: if all members have submitted, advance to voting. */
 export const checkAutoAdvanceSubmission = async (
@@ -33,13 +171,7 @@ export const checkAutoAdvanceSubmission = async (
   })
 
   if (submitters.length >= memberCount) {
-    return db.round.update({
-      where: { id: roundId },
-      data: {
-        state: 'voting',
-        votingClose: hoursFromNow(league.votingDeadlineHours),
-      },
-    })
+    return advanceToVoting(round, league)
   }
 
   return null
@@ -66,14 +198,7 @@ export const checkAutoAdvanceVoting = async (
   })
 
   if (voters.length >= memberCount) {
-    const updated = await db.round.update({
-      where: { id: roundId },
-      data: { state: 'results' },
-    })
-
-    await maybeOpenNextRound(league, round.roundNumber)
-
-    return updated
+    return advanceToResults(round, league)
   }
 
   return null
@@ -98,14 +223,7 @@ export const maybeOpenNextRound = async (
   })
 
   if (existing?.state === 'upcoming') {
-    return db.round.update({
-      where: { id: existing.id },
-      data: {
-        state: 'submitting',
-        submissionsOpen: new Date(),
-        submissionsClose: hoursFromNow(league.submissionDeadlineHours),
-      },
-    })
+    return openRoundForSubmissions(existing, league)
   }
 
   return existing
