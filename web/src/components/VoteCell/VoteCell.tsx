@@ -1,6 +1,14 @@
 import { useState } from 'react'
 
-import { ArrowLeft, Minus, Music, Plus } from 'lucide-react'
+import {
+  ArrowLeft,
+  ListMusic,
+  Minus,
+  Music,
+  Pause,
+  Play,
+  Plus,
+} from 'lucide-react'
 import type { FindVoteQuery, FindVoteQueryVariables } from 'types/graphql'
 
 import { Link, navigate, routes } from '@cedarjs/router'
@@ -9,7 +17,12 @@ import { useMutation } from '@cedarjs/web'
 import { toast } from '@cedarjs/web/toast'
 
 import PageContainer from 'src/components/PageContainer/PageContainer'
-import TrackEmbed from 'src/components/TrackEmbed/TrackEmbed'
+import PlayerDock from 'src/components/Player/PlayerDock'
+import {
+  PlayerProvider,
+  usePlayer,
+  type QueueTrack,
+} from 'src/components/Player/PlayerProvider'
 import { Button } from 'src/components/ui/button'
 import { Card } from 'src/components/ui/card'
 import { cn } from 'src/lib/utils'
@@ -21,6 +34,8 @@ export const QUERY: TypedDocumentNode<FindVoteQuery, FindVoteQueryVariables> =
         id
         upvotesPerRound
         maxPointsPerSong
+        downvotesEnabled
+        downvotesPerRound
       }
       round(id: $roundId) {
         id
@@ -34,6 +49,7 @@ export const QUERY: TypedDocumentNode<FindVoteQuery, FindVoteQueryVariables> =
         platform
         platformTrackId
         trackUrl
+        blurb
         isMine
       }
       myVotes(roundId: $roundId) {
@@ -68,7 +84,14 @@ type VoteCellProps = FindVoteQuery & FindVoteQueryVariables
 const stepBtnClass =
   'grid size-[38px] flex-none place-items-center rounded-full border-[1.5px] border-divider bg-background dark:bg-card text-xl font-bold text-foreground transition-colors enabled:hover:border-brand enabled:hover:text-brand disabled:cursor-not-allowed disabled:opacity-40'
 
-export const Success = ({
+export const Success = (props: VoteCellProps) => (
+  <PlayerProvider>
+    <VoteContent {...props} />
+    <PlayerDock />
+  </PlayerProvider>
+)
+
+const VoteContent = ({
   league,
   round,
   submissions,
@@ -77,8 +100,23 @@ export const Success = ({
   roundId,
 }: VoteCellProps) => {
   const others = submissions.filter((s) => !s.isMine)
+
+  const queueTracks: QueueTrack[] = others.map((s) => ({
+    submissionId: s.id,
+    platform: s.platform,
+    platformTrackId: s.platformTrackId,
+    trackUrl: s.trackUrl,
+    trackName: s.trackName,
+    artistName: s.artistName,
+    artworkUrl: s.artworkUrl,
+  }))
+
+  const { currentTrack, isPlaying, playAll, playTrack, togglePlay } =
+    usePlayer()
   const upvotesPerRound = league.upvotesPerRound
   const maxPointsPerSong = league.maxPointsPerSong
+  const downvotesEnabled = league.downvotesEnabled
+  const downvotesPerRound = league.downvotesPerRound
 
   const [votes, setVotes] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {}
@@ -94,19 +132,31 @@ export const Success = ({
     0
   )
   const pointsRemaining = upvotesPerRound - pointsUsed
+  const downvotesUsed = Object.values(votes).reduce(
+    (sum, v) => sum + Math.max(0, -v),
+    0
+  )
+  const downvotesRemaining = downvotesPerRound - downvotesUsed
 
   const setPoints = (submissionId: string, points: number) => {
-    const current = votes[submissionId] ?? 0
-    const diff = points - current
-
     setVotes((prev) => {
-      if (diff > 0 && pointsRemaining < diff) {
-        return { ...prev, [submissionId]: current + pointsRemaining }
+      const current = prev[submissionId] ?? 0
+      let next = points
+      if (maxPointsPerSong != null) {
+        next = Math.max(-maxPointsPerSong, Math.min(maxPointsPerSong, next))
       }
-      if (points < 0) {
-        return { ...prev, [submissionId]: 0 }
+      if (!downvotesEnabled && next < 0) {
+        next = 0
       }
-      return { ...prev, [submissionId]: points }
+      const upDiff = Math.max(0, next) - Math.max(0, current)
+      if (upDiff > 0 && pointsRemaining < upDiff) {
+        next = Math.max(0, current) + pointsRemaining
+      }
+      const downDiff = Math.max(0, -next) - Math.max(0, -current)
+      if (downDiff > 0 && downvotesRemaining < downDiff) {
+        next = -(Math.max(0, -current) + downvotesRemaining)
+      }
+      return { ...prev, [submissionId]: next }
     })
   }
 
@@ -162,20 +212,51 @@ export const Success = ({
           <p className="mt-1.5 max-w-[48ch] text-muted-foreground">
             Listen to each track, then spread your {upvotesPerRound} points.
             Give more to your favourites.
+            {downvotesEnabled &&
+              ` You also have ${downvotesPerRound} downvote${downvotesPerRound === 1 ? '' : 's'} for tracks you'd rather not hear again.`}
           </p>
+          {others.length > 0 && (
+            <Button
+              variant="secondary"
+              className="mt-3"
+              onClick={() => playAll(queueTracks)}
+            >
+              <ListMusic className="h-4 w-4" />
+              Play all
+            </Button>
+          )}
         </div>
-        <div className="ml-auto text-right">
-          <div
-            className={cn(
-              'font-heading text-[40px] leading-none',
-              pointsRemaining === 0 ? 'text-brand' : 'text-foreground'
-            )}
-          >
-            {pointsRemaining}
+        <div className="ml-auto flex gap-6 text-right">
+          <div>
+            <div
+              className={cn(
+                'font-heading text-[40px] leading-none',
+                pointsRemaining === 0 ? 'text-brand' : 'text-foreground'
+              )}
+            >
+              {pointsRemaining}
+            </div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              points left
+            </div>
           </div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            points left
-          </div>
+          {downvotesEnabled && (
+            <div>
+              <div
+                className={cn(
+                  'font-heading text-[40px] leading-none',
+                  downvotesRemaining === 0
+                    ? 'text-destructive'
+                    : 'text-foreground'
+                )}
+              >
+                {downvotesRemaining}
+              </div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                downvotes left
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -187,13 +268,24 @@ export const Success = ({
           </p>
         </Card>
       ) : (
-        <div className="my-5 flex flex-col gap-3">
+        <div
+          className={cn(
+            'my-5 flex flex-col gap-3',
+            currentTrack && 'pb-44 nav:pb-40'
+          )}
+        >
           {others.map((sub) => {
             const pts = votes[sub.id] ?? 0
+            const isCurrent = currentTrack?.submissionId === sub.id
             return (
               <Card
                 key={sub.id}
-                className={cn('gap-3', pts > 0 && 'border border-brand')}
+                className={cn(
+                  'gap-3',
+                  pts > 0 && 'border border-brand',
+                  pts < 0 && 'border border-destructive',
+                  isCurrent && 'ring-2 ring-brand/50'
+                )}
               >
                 <div className="flex items-center gap-3.5">
                   {sub.artworkUrl ? (
@@ -207,6 +299,28 @@ export const Success = ({
                       <Music className="h-5 w-5" strokeWidth={2.2} />
                     </span>
                   )}
+                  <button
+                    type="button"
+                    className={cn(
+                      stepBtnClass,
+                      isCurrent &&
+                        'border-brand bg-brand text-white enabled:hover:text-white'
+                    )}
+                    onClick={() =>
+                      isCurrent ? togglePlay() : playTrack(queueTracks, sub.id)
+                    }
+                    aria-label={
+                      isCurrent && isPlaying
+                        ? `Pause ${sub.trackName}`
+                        : `Play ${sub.trackName}`
+                    }
+                  >
+                    {isCurrent && isPlaying ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="ml-0.5 h-4 w-4" />
+                    )}
+                  </button>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{sub.trackName}</p>
                     <p className="truncate text-[13px] text-muted-foreground">
@@ -218,12 +332,27 @@ export const Success = ({
                       type="button"
                       className={stepBtnClass}
                       onClick={() => setPoints(sub.id, pts - 1)}
-                      disabled={pts <= 0}
-                      aria-label={`Remove a point from ${sub.trackName}`}
+                      disabled={
+                        pts <= 0 &&
+                        (!downvotesEnabled ||
+                          downvotesRemaining <= 0 ||
+                          (maxPointsPerSong != null &&
+                            -pts >= maxPointsPerSong))
+                      }
+                      aria-label={
+                        pts > 0
+                          ? `Remove a point from ${sub.trackName}`
+                          : `Downvote ${sub.trackName}`
+                      }
                     >
                       <Minus className="h-4 w-4" />
                     </button>
-                    <span className="w-[26px] text-center font-heading text-[22px]">
+                    <span
+                      className={cn(
+                        'w-[26px] text-center font-heading text-[22px]',
+                        pts < 0 && 'text-destructive'
+                      )}
+                    >
                       {pts}
                     </span>
                     <button
@@ -231,22 +360,26 @@ export const Success = ({
                       className={stepBtnClass}
                       onClick={() => setPoints(sub.id, pts + 1)}
                       disabled={
-                        pointsRemaining <= 0 ||
-                        (maxPointsPerSong != null && pts >= maxPointsPerSong)
+                        pts >= 0 &&
+                        (pointsRemaining <= 0 ||
+                          (maxPointsPerSong != null && pts >= maxPointsPerSong))
                       }
-                      aria-label={`Add a point to ${sub.trackName}`}
+                      aria-label={
+                        pts < 0
+                          ? `Remove a downvote from ${sub.trackName}`
+                          : `Add a point to ${sub.trackName}`
+                      }
                     >
                       <Plus className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
 
-                <TrackEmbed
-                  platform={sub.platform}
-                  platformTrackId={sub.platformTrackId}
-                  trackUrl={sub.trackUrl}
-                  compact
-                />
+                {sub.blurb && (
+                  <p className="text-[13px] italic text-muted-foreground">
+                    “{sub.blurb}”
+                  </p>
+                )}
               </Card>
             )
           })}

@@ -1,6 +1,7 @@
 import type { League, Round } from 'api/db/generated/prisma'
 
 import { db } from './db.js'
+import { notifyRoundTransition } from './roundNotifications.js'
 
 /**
  * Round state machine, ported from the original round_manager.py.
@@ -31,7 +32,7 @@ export const openRoundForSubmissions = async (
   round: Round,
   league: League
 ): Promise<Round> => {
-  await db.round.updateMany({
+  const { count } = await db.round.updateMany({
     where: { id: round.id, state: 'upcoming' },
     data: {
       state: 'submitting',
@@ -39,7 +40,14 @@ export const openRoundForSubmissions = async (
       submissionsClose: hoursFromNow(submissionHours(league, round)),
     },
   })
-  return db.round.findUnique({ where: { id: round.id } })
+  const fresh = await db.round.findUnique({ where: { id: round.id } })
+
+  // Only the compare-and-set winner notifies, so a transition emails once.
+  if (count > 0) {
+    await notifyRoundTransition('submitting', fresh)
+  }
+
+  return fresh
 }
 
 /** submitting -> voting. */
@@ -47,14 +55,20 @@ export const advanceToVoting = async (
   round: Round,
   league: League
 ): Promise<Round> => {
-  await db.round.updateMany({
+  const { count } = await db.round.updateMany({
     where: { id: round.id, state: 'submitting' },
     data: {
       state: 'voting',
       votingClose: hoursFromNow(votingHours(league, round)),
     },
   })
-  return db.round.findUnique({ where: { id: round.id } })
+  const fresh = await db.round.findUnique({ where: { id: round.id } })
+
+  if (count > 0) {
+    await notifyRoundTransition('voting', fresh)
+  }
+
+  return fresh
 }
 
 /** voting (or submitting, for empty rounds) -> results, then open the next round. */
@@ -68,8 +82,10 @@ export const advanceToResults = async (
   })
   const fresh = await db.round.findUnique({ where: { id: round.id } })
 
-  // Only the invocation that won the compare-and-set opens the next round.
+  // Only the invocation that won the compare-and-set opens the next round
+  // (and notifies).
   if (count > 0) {
+    await notifyRoundTransition('results', fresh)
     await maybeOpenNextRound(league, round.roundNumber)
   }
 

@@ -86,8 +86,16 @@ export const createSubmission: MutationResolvers['createSubmission'] = async ({
     }
   }
 
+  if (input.blurb && input.blurb.length > 300) {
+    throw new UserInputError('Blurb must be 300 characters or fewer')
+  }
+
   const submission = await db.submission.create({
-    data: { ...input, userId: currentUserId() },
+    data: {
+      ...input,
+      blurb: input.blurb?.trim() || null,
+      userId: currentUserId(),
+    },
   })
 
   // All members submitted? Auto-advance to voting.

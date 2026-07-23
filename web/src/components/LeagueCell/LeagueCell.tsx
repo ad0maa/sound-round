@@ -8,6 +8,7 @@ import {
   Lock,
   PartyPopper,
   Play,
+  Settings,
   Trophy,
 } from 'lucide-react'
 import type { FindLeagueQuery, FindLeagueQueryVariables } from 'types/graphql'
@@ -215,6 +216,14 @@ export const Success = ({
                 <Copy className="h-4 w-4" />
               )}
               {copied ? 'Copied!' : 'Invite link'}
+            </Button>
+          )}
+          {canManage && (
+            <Button asChild variant="secondary">
+              <Link to={routes.leagueSettings({ id: league.id })}>
+                <Settings className="h-4 w-4" />
+                Settings
+              </Link>
             </Button>
           )}
         </div>

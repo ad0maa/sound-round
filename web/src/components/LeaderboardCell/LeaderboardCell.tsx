@@ -1,4 +1,4 @@
-import { ArrowLeft, Crown, Trophy } from 'lucide-react'
+import { ArrowLeft, BarChart3, Crown, Trophy } from 'lucide-react'
 import type {
   FindLeagueLeaderboardQuery,
   FindLeagueLeaderboardQueryVariables,
@@ -83,10 +83,20 @@ export const Success = ({
         </Link>
       </Button>
 
-      <h1 className="mb-1 text-[38px]">Leaderboard</h1>
-      <p className="mb-5 text-muted-foreground">
-        {league.name} · cumulative points across every round.
-      </p>
+      <div className="mb-5 flex flex-wrap items-start gap-4">
+        <div>
+          <h1 className="mb-1 text-[38px]">Leaderboard</h1>
+          <p className="text-muted-foreground">
+            {league.name} · cumulative points across every round.
+          </p>
+        </div>
+        <Button asChild variant="secondary" className="ml-auto">
+          <Link to={routes.leagueStats({ id: league.id })}>
+            <BarChart3 className="h-4 w-4" />
+            Stats
+          </Link>
+        </Button>
+      </div>
 
       {winners.length > 0 && (
         <Card className="mb-5 items-center gap-2 border border-brand2 bg-brand2-100 py-8 text-center dark:bg-brand2-900">

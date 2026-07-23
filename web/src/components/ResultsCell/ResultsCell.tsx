@@ -1,13 +1,16 @@
 import { useState } from 'react'
 
+import { Check, Copy, ListVideo } from 'lucide-react'
 import type { FindResultsQuery, FindResultsQueryVariables } from 'types/graphql'
 
 import { Link, routes } from '@cedarjs/router'
 import type { TypedDocumentNode } from '@cedarjs/web'
 
+import RoundCommentsCell from 'src/components/RoundCommentsCell'
 import TrackEmbed from 'src/components/TrackEmbed/TrackEmbed'
 import { Button } from 'src/components/ui/button'
 import { Card, CardContent } from 'src/components/ui/card'
+import { trackListText, youtubeQueueUrl } from 'src/lib/playlist'
 
 export const QUERY: TypedDocumentNode<
   FindResultsQuery,
@@ -29,6 +32,7 @@ export const QUERY: TypedDocumentNode<
       platform
       platformTrackId
       trackUrl
+      blurb
       totalPoints
       submitter {
         displayName
@@ -59,18 +63,49 @@ export const Success = ({
   submissions: FindResultsQuery['submissions']
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const sorted = [...submissions].sort(
     (a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0)
   )
 
+  const queueUrl = youtubeQueueUrl(sorted)
+
+  const copyTrackList = () => {
+    navigator.clipboard.writeText(trackListText(sorted))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-6">
-      <div>
-        <p className="text-sm text-muted-foreground">
-          Round #{round.roundNumber} Results
-        </p>
-        <h1 className="text-2xl font-bold">{round.theme}</h1>
+      <div className="flex flex-wrap items-start gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            Round #{round.roundNumber} Results
+          </p>
+          <h1 className="text-2xl font-bold">{round.theme}</h1>
+        </div>
+        {round.state === 'results' && sorted.length > 0 && (
+          <div className="ml-auto flex gap-2">
+            <Button variant="outline" size="sm" onClick={copyTrackList}>
+              {copied ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+              {copied ? 'Copied!' : 'Copy track list'}
+            </Button>
+            {queueUrl && (
+              <Button variant="outline" size="sm" asChild>
+                <a href={queueUrl} target="_blank" rel="noreferrer">
+                  <ListVideo className="h-4 w-4" />
+                  Open as YouTube playlist
+                </a>
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {round.state !== 'results' ? (
@@ -122,6 +157,12 @@ export const Success = ({
 
                 {expandedId === sub.id && (
                   <>
+                    {sub.blurb && (
+                      <p className="text-sm italic text-muted-foreground">
+                        “{sub.blurb}”
+                        {sub.submitter && <> — {sub.submitter.displayName}</>}
+                      </p>
+                    )}
                     <TrackEmbed
                       platform={sub.platform}
                       platformTrackId={sub.platformTrackId}
@@ -158,6 +199,8 @@ export const Success = ({
           ))}
         </div>
       )}
+
+      {round.state === 'results' && <RoundCommentsCell roundId={round.id} />}
 
       <Button variant="outline" asChild>
         <Link to={routes.round({ id: round.leagueId, roundId: round.id })}>
