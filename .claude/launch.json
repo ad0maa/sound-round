@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sound-round-dev",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["cedar", "dev"],
+      "port": 8920
+    }
+  ]
+}
