@@ -26,6 +26,14 @@ export const myLeagues: QueryResolvers['myLeagues'] = () => {
   })
 }
 
+/** Discoverable leagues anyone can browse and join directly (no invite needed). */
+export const publicLeagues: QueryResolvers['publicLeagues'] = () => {
+  return db.league.findMany({
+    where: { isPublic: true },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
 export const league: QueryResolvers['league'] = async ({ id }) => {
   const found = await db.league.findUnique({
     where: { id },

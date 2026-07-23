@@ -1,4 +1,4 @@
-import { Music, Plus, Users } from 'lucide-react'
+import { Globe, Lock, Music, Plus, Users } from 'lucide-react'
 import type { MyLeaguesQuery, MyLeaguesQueryVariables } from 'types/graphql'
 
 import { Link, routes } from '@cedarjs/router'
@@ -21,6 +21,7 @@ export const QUERY: TypedDocumentNode<MyLeaguesQuery, MyLeaguesQueryVariables> =
         id
         name
         description
+        isPublic
         memberCount
         totalRounds
         myRole
@@ -42,14 +43,23 @@ export const Empty = () => (
       <CardContent className="space-y-3 py-12 text-center">
         <Music className="mx-auto h-10 w-10 text-muted-foreground" />
         <p className="text-muted-foreground">
-          No leagues yet — start one and invite your friends.
+          No leagues yet — start one and invite your friends, or join a public
+          league.
         </p>
-        <Button asChild>
-          <Link to={routes.newLeague()}>
-            <Plus className="h-4 w-4" />
-            New League
-          </Link>
-        </Button>
+        <div className="flex justify-center gap-3">
+          <Button asChild>
+            <Link to={routes.newLeague()}>
+              <Plus className="h-4 w-4" />
+              New League
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to={routes.browseLeagues()}>
+              <Globe className="h-4 w-4" />
+              Browse Leagues
+            </Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   </div>
@@ -68,9 +78,19 @@ export const Success = ({
             <CardHeader>
               <div className="flex items-start justify-between gap-2">
                 <CardTitle className="text-base">{league.name}</CardTitle>
-                {league.myRole === 'creator' && (
-                  <Badge variant="secondary">Creator</Badge>
-                )}
+                <div className="flex flex-shrink-0 gap-1">
+                  {league.myRole === 'creator' && (
+                    <Badge variant="secondary">Creator</Badge>
+                  )}
+                  <Badge variant="outline" className="gap-1">
+                    {league.isPublic ? (
+                      <Globe className="h-3 w-3" />
+                    ) : (
+                      <Lock className="h-3 w-3" />
+                    )}
+                    {league.isPublic ? 'Public' : 'Private'}
+                  </Badge>
+                </div>
               </div>
               {league.description && (
                 <CardDescription>{league.description}</CardDescription>

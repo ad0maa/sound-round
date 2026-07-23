@@ -30,6 +30,7 @@ const Routes = () => {
         <Route path="/" page={HomePage} name="home" />
         <Route path="/leagues" page={LeaguesPage} name="leagues" />
         <Route path="/leagues/new" page={NewLeaguePage} name="newLeague" />
+        <Route path="/leagues/browse" page={BrowseLeaguesPage} name="browseLeagues" />
         <Route path="/leagues/{id}" page={LeaguePage} name="league" />
         <Route path="/leagues/{id}/leaderboard" page={LeaderboardPage} name="leaderboard" />
         <Route path="/leagues/{id}/rounds/new" page={NewRoundPage} name="newRound" />

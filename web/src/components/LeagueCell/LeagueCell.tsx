@@ -1,6 +1,14 @@
 import { useState } from 'react'
 
-import { Check, Copy, PartyPopper, Play, Trophy } from 'lucide-react'
+import {
+  Check,
+  Copy,
+  Globe,
+  Lock,
+  PartyPopper,
+  Play,
+  Trophy,
+} from 'lucide-react'
 import type { FindLeagueQuery, FindLeagueQueryVariables } from 'types/graphql'
 
 import { Link, routes } from '@cedarjs/router'
@@ -23,6 +31,7 @@ export const QUERY: TypedDocumentNode<
       name
       description
       inviteCode
+      isPublic
       memberCount
       myRole
       upvotesPerRound
@@ -100,7 +109,17 @@ export const Success = ({ league }: { league: FindLeagueQuery['league'] }) => {
     <div className="mx-auto w-full max-w-3xl space-y-6 p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{league.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{league.name}</h1>
+            <Badge variant="outline" className="gap-1">
+              {league.isPublic ? (
+                <Globe className="h-3 w-3" />
+              ) : (
+                <Lock className="h-3 w-3" />
+              )}
+              {league.isPublic ? 'Public' : 'Private'}
+            </Badge>
+          </div>
           {league.description && (
             <p className="mt-1 text-muted-foreground">{league.description}</p>
           )}
