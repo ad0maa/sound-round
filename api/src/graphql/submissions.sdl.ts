@@ -26,6 +26,16 @@ export const schema = gql`
     isMine: Boolean
     submitter: User
     totalPoints: Int
+    votes: [SubmissionVote!]
+  }
+
+  """
+  Per-voter breakdown for a submission. Like \`submitter\`, resolves to null
+  until the round reaches the results state.
+  """
+  type SubmissionVote {
+    voterName: String!
+    points: Int!
   }
 
   type Query {

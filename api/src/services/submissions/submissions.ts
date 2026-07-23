@@ -9,12 +9,14 @@ import { UserInputError, ForbiddenError } from '@cedarjs/graphql-server'
 
 import { db } from 'src/lib/db'
 import { requireMembership } from 'src/lib/membership'
-import { checkAutoAdvanceSubmission } from 'src/lib/roundManager'
+import { checkAutoAdvanceSubmission, settleRound } from 'src/lib/roundManager'
 
 const currentUserId = () => context.currentUser.id as string
 
+// settleRound lazily applies any deadline-driven state transition, so the
+// state guards below also enforce expired submission/voting windows.
 const getRoundOrThrow = async (roundId: string) => {
-  const round = await db.round.findUnique({ where: { id: roundId } })
+  const round = await settleRound(roundId)
   if (!round) {
     throw new UserInputError('Round not found')
   }
@@ -147,5 +149,20 @@ export const Submission: SubmissionRelationResolvers = {
       where: { submissionId: root.id },
     })
     return agg._sum.points ?? 0
+  },
+  votes: async (_obj, { root }) => {
+    const round = await db.round.findUnique({ where: { id: root.roundId } })
+    if (round?.state !== 'results') {
+      return null
+    }
+    const votes = await db.vote.findMany({
+      where: { submissionId: root.id },
+      include: { voter: { select: { displayName: true } } },
+      orderBy: { points: 'desc' },
+    })
+    return votes.map((v) => ({
+      voterName: v.voter.displayName,
+      points: v.points,
+    }))
   },
 }

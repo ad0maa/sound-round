@@ -8,6 +8,7 @@ import { useMutation } from '@cedarjs/web'
 import { toast } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
+import Countdown from 'src/components/Countdown/Countdown'
 import { Button } from 'src/components/ui/button'
 import {
   Card,
@@ -29,6 +30,12 @@ export const QUERY: TypedDocumentNode<FindRoundQuery, FindRoundQueryVariables> =
         description
         state
         songsPerPlayer
+        submissionsClose
+        votingClose
+        league {
+          id
+          myRole
+        }
       }
       roundProgress(roundId: $id) {
         state
@@ -84,9 +91,11 @@ const nextStateLabel: Record<string, string> = {
 export const Success = ({
   round,
   roundProgress,
+  queryResult,
 }: {
   round: FindRoundQuery['round']
   roundProgress: FindRoundQuery['roundProgress']
+  queryResult?: { refetch?: () => unknown }
 }) => {
   const { currentUser } = useAuth()
   const [advancing, setAdvancing] = useState(false)
@@ -103,6 +112,20 @@ export const Success = ({
   const myProgress = roundProgress.members.find(
     (m) => m.userId === currentUser?.id
   )
+
+  const canManage =
+    round.league.myRole === 'creator' || round.league.myRole === 'admin'
+
+  // When a deadline hits, refetch — the server settles the round lazily, so
+  // the page rolls into the next phase without a manual refresh.
+  const onDeadline = () => queryResult?.refetch?.()
+
+  const deadline =
+    round.state === 'submitting'
+      ? round.submissionsClose
+      : round.state === 'voting'
+        ? round.votingClose
+        : null
 
   const upcoming = nextState[round.state]
   const progressCount =
@@ -127,12 +150,13 @@ export const Success = ({
           )}
         </div>
         <div className="flex items-center gap-3">
+          {deadline && <Countdown deadline={deadline} onExpire={onDeadline} />}
           <span
             className={`rounded-full px-2 py-1 text-xs font-medium ${stateColors[round.state] ?? ''}`}
           >
             {round.state}
           </span>
-          {upcoming && (
+          {upcoming && canManage && (
             <Button
               size="sm"
               disabled={advancing}

@@ -22,12 +22,15 @@ export const schema = gql`
     totalRounds: Int!
     submissionDeadlineHours: Int!
     votingDeadlineHours: Int!
+    startsAt: DateTime
     createdAt: DateTime!
     updatedAt: DateTime!
     members: [LeagueMember!]!
     rounds: [Round!]!
     memberCount: Int
     myRole: Role
+    hasStarted: Boolean
+    isFinished: Boolean
   }
 
   type LeagueMember {
@@ -43,6 +46,13 @@ export const schema = gql`
     league(id: String!): League! @requireAuth
   }
 
+  input LeagueRoundInput {
+    theme: String!
+    description: String
+    submissionDurationHours: Int
+    votingDurationHours: Int
+  }
+
   input CreateLeagueInput {
     name: String!
     description: String
@@ -56,6 +66,8 @@ export const schema = gql`
     totalRounds: Int
     submissionDeadlineHours: Int
     votingDeadlineHours: Int
+    startsAt: DateTime
+    rounds: [LeagueRoundInput!]!
   }
 
   input UpdateLeagueInput {
@@ -76,6 +88,7 @@ export const schema = gql`
   type Mutation {
     createLeague(input: CreateLeagueInput!): League! @requireAuth
     updateLeague(id: String!, input: UpdateLeagueInput!): League! @requireAuth
+    startLeague(id: String!): League! @requireAuth
     joinLeague(id: String!): League! @requireAuth
     joinLeagueByInvite(inviteCode: String!): League! @requireAuth
     leaveLeague(id: String!): Boolean! @requireAuth

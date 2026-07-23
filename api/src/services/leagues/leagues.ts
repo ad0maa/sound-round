@@ -9,6 +9,11 @@ import type {
 import { ForbiddenError, UserInputError } from '@cedarjs/graphql-server'
 
 import { db } from 'src/lib/db'
+import { requireLeagueRole } from 'src/lib/membership'
+import {
+  openRoundForSubmissions,
+  settleLeagueRounds,
+} from 'src/lib/roundManager'
 
 const generateInviteCode = () => crypto.randomBytes(8).toString('base64url')
 
@@ -36,21 +41,77 @@ export const league: QueryResolvers['league'] = async ({ id }) => {
     throw new ForbiddenError('Not a member of this league')
   }
 
+  // Lazily apply any due deadline transitions (and scheduled start) so the
+  // league page always reflects settled round states.
+  await settleLeagueRounds(id)
+
   return found
 }
 
-export const createLeague: MutationResolvers['createLeague'] = ({ input }) => {
-  // Creator automatically joins with the "creator" role
-  return db.league.create({
-    data: {
-      ...input,
-      creatorId: currentUserId(),
-      inviteCode: generateInviteCode(),
-      members: {
-        create: { userId: currentUserId(), role: 'creator' },
+export const createLeague: MutationResolvers['createLeague'] = async ({
+  input,
+}) => {
+  const { rounds, totalRounds: _ignored, ...leagueData } = input
+
+  if (!rounds || rounds.length < 1) {
+    throw new UserInputError('A league needs at least one round')
+  }
+  if (rounds.some((r) => !r.theme.trim())) {
+    throw new UserInputError('Every round needs a theme')
+  }
+
+  // Creator automatically joins with the "creator" role. All rounds are
+  // created upfront in `upcoming` — round 1 opens via startLeague, the
+  // scheduled startsAt, or automatically when the league fills up.
+  return db.$transaction(async (tx) => {
+    const created = await tx.league.create({
+      data: {
+        ...leagueData,
+        totalRounds: rounds.length,
+        creatorId: currentUserId(),
+        inviteCode: generateInviteCode(),
+        members: {
+          create: { userId: currentUserId(), role: 'creator' },
+        },
       },
-    },
+    })
+
+    await tx.round.createMany({
+      data: rounds.map((r, i) => ({
+        leagueId: created.id,
+        roundNumber: i + 1,
+        theme: r.theme.trim(),
+        description: r.description,
+        submissionDurationHours: r.submissionDurationHours,
+        votingDurationHours: r.votingDurationHours,
+      })),
+    })
+
+    return created
   })
+}
+
+export const startLeague: MutationResolvers['startLeague'] = async ({ id }) => {
+  await requireLeagueRole(id, ['creator', 'admin'])
+
+  const found = await db.league.findUnique({ where: { id } })
+  if (!found) {
+    throw new UserInputError('League not found')
+  }
+
+  const firstRound = await db.round.findUnique({
+    where: { leagueId_roundNumber: { leagueId: id, roundNumber: 1 } },
+  })
+  if (!firstRound) {
+    throw new UserInputError('League has no rounds')
+  }
+  if (firstRound.state !== 'upcoming') {
+    throw new UserInputError('League has already started')
+  }
+
+  await openRoundForSubmissions(firstRound, found)
+
+  return found
 }
 
 export const updateLeague: MutationResolvers['updateLeague'] = async ({
@@ -85,6 +146,17 @@ const joinAsPlayer = async (leagueId: string, maxPlayers: number) => {
   await db.leagueMember.create({
     data: { leagueId, userId: currentUserId(), role: 'player' },
   })
+
+  // Auto-start: when the league fills up, open round 1.
+  if (memberCount + 1 >= maxPlayers) {
+    const league = await db.league.findUnique({ where: { id: leagueId } })
+    const firstRound = await db.round.findUnique({
+      where: { leagueId_roundNumber: { leagueId, roundNumber: 1 } },
+    })
+    if (league && firstRound?.state === 'upcoming') {
+      await openRoundForSubmissions(firstRound, league)
+    }
+  }
 }
 
 export const joinLeague: MutationResolvers['joinLeague'] = async ({ id }) => {
@@ -155,6 +227,20 @@ export const League: LeagueRelationResolvers = {
       },
     })
     return member?.role ?? null
+  },
+  hasStarted: async (_obj, { root }) => {
+    // Started = round 1 has left `upcoming`.
+    const firstRound = await db.round.findUnique({
+      where: { leagueId_roundNumber: { leagueId: root?.id, roundNumber: 1 } },
+    })
+    return firstRound ? firstRound.state !== 'upcoming' : false
+  },
+  isFinished: async (_obj, { root }) => {
+    const found = await db.league.findUnique({ where: { id: root?.id } })
+    const completed = await db.round.count({
+      where: { leagueId: root?.id, state: 'results' },
+    })
+    return completed >= (found?.totalRounds ?? Infinity)
   },
 }
 

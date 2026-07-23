@@ -17,6 +17,8 @@ export const schema = gql`
     submissionsOpen: DateTime
     submissionsClose: DateTime
     votingClose: DateTime
+    submissionDurationHours: Int
+    votingDurationHours: Int
     songsPerPlayer: Int!
     createdAt: DateTime!
     submissionCount: Int
@@ -49,6 +51,8 @@ export const schema = gql`
     theme: String!
     description: String
     songsPerPlayer: Int
+    submissionDurationHours: Int
+    votingDurationHours: Int
   }
 
   type Mutation {

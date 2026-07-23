@@ -1,10 +1,12 @@
 import { useState } from 'react'
 
-import { Check, Copy, Trophy } from 'lucide-react'
+import { Check, Copy, PartyPopper, Play, Trophy } from 'lucide-react'
 import type { FindLeagueQuery, FindLeagueQueryVariables } from 'types/graphql'
 
 import { Link, routes } from '@cedarjs/router'
 import type { TypedDocumentNode } from '@cedarjs/web'
+import { useMutation } from '@cedarjs/web'
+import { toast } from '@cedarjs/web/toast'
 
 import { Badge } from 'src/components/ui/badge'
 import { Button } from 'src/components/ui/button'
@@ -25,6 +27,10 @@ export const QUERY: TypedDocumentNode<
       myRole
       upvotesPerRound
       totalRounds
+      maxPlayers
+      startsAt
+      hasStarted
+      isFinished
       members {
         userId
         role
@@ -40,6 +46,14 @@ export const QUERY: TypedDocumentNode<
         state
         submissionCount
       }
+    }
+  }
+`
+
+const START_LEAGUE = gql`
+  mutation StartLeagueMutation($id: String!) {
+    startLeague(id: $id) {
+      id
     }
   }
 `
@@ -75,6 +89,13 @@ export const Success = ({ league }: { league: FindLeagueQuery['league'] }) => {
 
   const canManage = league.myRole === 'creator' || league.myRole === 'admin'
 
+  const [startLeague, { loading: starting }] = useMutation(START_LEAGUE, {
+    onCompleted: () => toast.success('League started — round 1 is open!'),
+    onError: (error) => toast.error(error.message),
+    refetchQueries: [{ query: QUERY, variables: { id: league.id } }],
+    awaitRefetchQueries: true,
+  })
+
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-6">
       <div className="flex items-start justify-between gap-4">
@@ -104,11 +125,60 @@ export const Success = ({ league }: { league: FindLeagueQuery['league'] }) => {
         </div>
       </div>
 
+      {/* Not started yet */}
+      {!league.hasStarted && !league.isFinished && (
+        <Card className="border-primary/40">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
+            <div>
+              <p className="font-medium">This league hasn&apos;t started yet</p>
+              <p className="text-sm text-muted-foreground">
+                {league.startsAt
+                  ? `Starts ${new Date(league.startsAt).toLocaleString()}, or when ${league.maxPlayers} players join.`
+                  : `Starts when the creator kicks it off, or when ${league.maxPlayers} players join.`}
+              </p>
+            </div>
+            {canManage && (
+              <Button
+                size="sm"
+                disabled={starting}
+                onClick={() => startLeague({ variables: { id: league.id } })}
+              >
+                <Play className="h-4 w-4" />
+                {starting ? 'Starting…' : 'Start League'}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Finished */}
+      {league.isFinished && (
+        <Card className="border-green-500/40 bg-green-500/5">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
+            <div className="flex items-center gap-3">
+              <PartyPopper className="h-6 w-6 text-green-400" />
+              <div>
+                <p className="font-medium">League finished!</p>
+                <p className="text-sm text-muted-foreground">
+                  All {league.totalRounds} rounds are complete.
+                </p>
+              </div>
+            </div>
+            <Button asChild size="sm">
+              <Link to={routes.leaderboard({ id: league.id })}>
+                <Trophy className="h-4 w-4" />
+                See the winner
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Rounds */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Rounds</h2>
-          {canManage && (
+          {canManage && !league.isFinished && (
             <Button asChild size="sm">
               <Link to={routes.newRound({ id: league.id })}>New Round</Link>
             </Button>

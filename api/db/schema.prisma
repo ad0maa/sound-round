@@ -72,6 +72,8 @@ model League {
   totalRounds             Int            @default(10)
   submissionDeadlineHours Int            @default(72)
   votingDeadlineHours     Int            @default(48)
+  // Optional scheduled start — round 1 opens lazily once this passes.
+  startsAt                DateTime?
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
   members                 LeagueMember[]
@@ -100,6 +102,9 @@ model Round {
   submissionsOpen  DateTime?
   submissionsClose DateTime?
   votingClose      DateTime?
+  // Per-round overrides; fall back to the league's deadline-hours defaults.
+  submissionDurationHours Int?
+  votingDurationHours     Int?
   songsPerPlayer   Int          @default(1)
   createdAt        DateTime     @default(now())
   submissions      Submission[]

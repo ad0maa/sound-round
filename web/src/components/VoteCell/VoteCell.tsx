@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import type { FindVoteQuery, FindVoteQueryVariables } from 'types/graphql'
 
-import { navigate, routes } from '@cedarjs/router'
+import { Link, navigate, routes } from '@cedarjs/router'
 import type { TypedDocumentNode } from '@cedarjs/web'
 import { useMutation } from '@cedarjs/web'
 import { toast } from '@cedarjs/web/toast'
@@ -17,6 +17,11 @@ export const QUERY: TypedDocumentNode<FindVoteQuery, FindVoteQueryVariables> =
       league(id: $leagueId) {
         id
         upvotesPerRound
+        maxPointsPerSong
+      }
+      round(id: $roundId) {
+        id
+        state
       }
       submissions(roundId: $roundId) {
         id
@@ -55,6 +60,7 @@ type VoteCellProps = FindVoteQuery & FindVoteQueryVariables
 
 export const Success = ({
   league,
+  round,
   submissions,
   myVotes,
   leagueId,
@@ -62,6 +68,7 @@ export const Success = ({
 }: VoteCellProps) => {
   const others = submissions.filter((s) => !s.isMine)
   const upvotesPerRound = league.upvotesPerRound
+  const maxPointsPerSong = league.maxPointsPerSong
 
   const [votes, setVotes] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {}
@@ -108,6 +115,28 @@ export const Success = ({
       .map(([submissionId, points]) => ({ submissionId, points }))
 
     castVotes({ variables: { roundId, votes: voteEntries } })
+  }
+
+  // Guard direct navigation outside the voting window (server enforces too).
+  if (round.state !== 'voting') {
+    return (
+      <div className="mx-auto w-full max-w-3xl p-6">
+        <Card>
+          <CardContent className="space-y-4 py-8 text-center">
+            <p className="text-muted-foreground">
+              {round.state === 'results'
+                ? 'Voting has closed for this round.'
+                : 'Voting hasn’t opened yet — songs are still being submitted.'}
+            </p>
+            <Button asChild variant="outline">
+              <Link to={routes.round({ id: leagueId, roundId })}>
+                Back to Round
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -177,7 +206,10 @@ export const Success = ({
                         variant="outline"
                         size="sm"
                         onClick={() => setPoints(sub.id, pts + 1)}
-                        disabled={pointsRemaining <= 0}
+                        disabled={
+                          pointsRemaining <= 0 ||
+                          (maxPointsPerSong != null && pts >= maxPointsPerSong)
+                        }
                       >
                         +
                       </Button>
