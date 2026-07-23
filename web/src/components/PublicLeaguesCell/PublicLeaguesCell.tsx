@@ -11,13 +11,7 @@ import { toast } from '@cedarjs/web/toast'
 
 import { Badge } from 'src/components/ui/badge'
 import { Button } from 'src/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from 'src/components/ui/card'
+import { Card } from 'src/components/ui/card'
 
 export const QUERY: TypedDocumentNode<
   PublicLeaguesQuery,
@@ -42,28 +36,28 @@ export const QUERY: TypedDocumentNode<
 `
 
 export const Loading = () => (
-  <p className="p-6 text-muted-foreground">Loading public leagues…</p>
+  <p className="px-4 text-muted-foreground nav:px-10">
+    Loading public leagues…
+  </p>
 )
 
 export const Failure = ({ error }: { error?: { message: string } }) => (
-  <p className="p-6 text-destructive">Error: {error?.message}</p>
+  <p className="px-4 text-destructive nav:px-10">Error: {error?.message}</p>
 )
 
 export const Empty = () => (
-  <div className="p-6">
-    <Card>
-      <CardContent className="space-y-3 py-12 text-center">
-        <Globe className="mx-auto h-10 w-10 text-muted-foreground" />
-        <p className="text-muted-foreground">
-          No public leagues yet — make yours public when you create one.
-        </p>
-        <Button asChild>
-          <Link to={routes.newLeague()}>
-            <Plus className="h-4 w-4" />
-            New League
-          </Link>
-        </Button>
-      </CardContent>
+  <div className="px-4 nav:px-10">
+    <Card className="items-center gap-3 py-12 text-center">
+      <Globe className="mx-auto h-10 w-10 text-muted-foreground" />
+      <p className="text-muted-foreground">
+        No public leagues yet — make yours public when you create one.
+      </p>
+      <Button asChild>
+        <Link to={routes.newLeague()}>
+          <Plus className="h-4 w-4" />
+          New League
+        </Link>
+      </Button>
     </Card>
   </div>
 )
@@ -89,27 +83,29 @@ export const Success = ({
   })
 
   return (
-    <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-[18px] px-4 nav:grid-cols-3 nav:px-10">
       {publicLeagues.map((league) => {
         const isMember = league.myRole != null
         const isFull = (league.memberCount ?? 0) >= league.maxPlayers
 
         return (
-          <Card key={league.id} className="flex h-full flex-col">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-base">{league.name}</CardTitle>
-                {league.isFinished ? (
-                  <Badge variant="secondary">Finished</Badge>
-                ) : league.hasStarted ? (
-                  <Badge variant="secondary">In progress</Badge>
-                ) : null}
-              </div>
-              {league.description && (
-                <CardDescription>{league.description}</CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="mt-auto space-y-3">
+          <Card key={league.id} className="h-full">
+            <div className="flex items-start gap-2">
+              <span className="flex-1 font-heading text-[18px] leading-tight">
+                {league.name}
+              </span>
+              {league.isFinished ? (
+                <Badge variant="secondary">Finished</Badge>
+              ) : league.hasStarted ? (
+                <Badge variant="secondary">In progress</Badge>
+              ) : null}
+            </div>
+            {league.description && (
+              <p className="text-[13px] text-muted-foreground">
+                {league.description}
+              </p>
+            )}
+            <div className="mt-auto flex flex-col gap-2.5 pt-1">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Users className="h-4 w-4" />
                 {league.memberCount ?? 0}/{league.maxPlayers} members
@@ -137,7 +133,7 @@ export const Success = ({
                   {isFull ? 'Full' : loading ? 'Joining…' : 'Join'}
                 </Button>
               )}
-            </CardContent>
+            </div>
           </Card>
         )
       })}

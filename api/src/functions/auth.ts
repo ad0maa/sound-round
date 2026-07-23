@@ -30,7 +30,7 @@ export const handler = async (
       // TODO: Send an email/message to the user
       // The message should include a link to reset their password with the
       // `resetToken`. The URL should look something like:
-      // `http://localhost:8910/reset-password?resetToken=${resetToken}`
+      // `http://localhost:8920/reset-password?resetToken=${resetToken}`
       // When you implement this, change `_resetToken` to `resetToken` in the
       // function arguments above.
 

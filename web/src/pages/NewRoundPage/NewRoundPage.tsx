@@ -1,11 +1,10 @@
 import { useState } from 'react'
 
-import { Disc3 } from 'lucide-react'
-
 import { navigate, routes } from '@cedarjs/router'
 import { Metadata, useMutation } from '@cedarjs/web'
 import { toast } from '@cedarjs/web/toast'
 
+import PageContainer from 'src/components/PageContainer/PageContainer'
 import PageHeader from 'src/components/PageHeader/PageHeader'
 import { Button } from 'src/components/ui/button'
 import {
@@ -72,9 +71,9 @@ const NewRoundPage = ({ id }: NewRoundPageProps) => {
   return (
     <>
       <Metadata title="New Round" />
-      <PageHeader title="New Round" icon={Disc3} />
 
-      <div className="mx-auto w-full max-w-lg space-y-6 p-6">
+      <PageContainer className="max-w-lg" wide={false}>
+        <PageHeader title="New Round" description="Give it a theme." />
         <form onSubmit={onSubmit} className="space-y-6">
           <Card>
             <CardHeader>
@@ -154,7 +153,7 @@ const NewRoundPage = ({ id }: NewRoundPageProps) => {
             </Button>
           </div>
         </form>
-      </div>
+      </PageContainer>
     </>
   )
 }

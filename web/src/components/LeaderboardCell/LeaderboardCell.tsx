@@ -1,20 +1,18 @@
-import { Crown, Trophy } from 'lucide-react'
+import { ArrowLeft, Crown, Trophy } from 'lucide-react'
 import type {
   FindLeagueLeaderboardQuery,
   FindLeagueLeaderboardQueryVariables,
 } from 'types/graphql'
 
+import { Link, routes } from '@cedarjs/router'
 import type { TypedDocumentNode } from '@cedarjs/web'
 
 import { useAuth } from 'src/auth'
+import PageContainer from 'src/components/PageContainer/PageContainer'
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from 'src/components/ui/card'
+import { Button } from 'src/components/ui/button'
+import { Card } from 'src/components/ui/card'
+import { cn } from 'src/lib/utils'
 
 export const QUERY: TypedDocumentNode<
   FindLeagueLeaderboardQuery,
@@ -23,6 +21,7 @@ export const QUERY: TypedDocumentNode<
   query FindLeagueLeaderboardQuery($leagueId: String!) {
     league(id: $leagueId) {
       id
+      name
       isFinished
     }
     leagueLeaderboard(leagueId: $leagueId) {
@@ -38,23 +37,25 @@ export const QUERY: TypedDocumentNode<
 `
 
 export const Loading = () => (
-  <p className="p-6 text-muted-foreground">Loading leaderboard…</p>
+  <PageContainer wide={false}>
+    <p className="text-muted-foreground">Loading leaderboard…</p>
+  </PageContainer>
 )
 
 export const Failure = ({ error }: { error?: { message: string } }) => (
-  <p className="p-6 text-destructive">Error: {error?.message}</p>
+  <PageContainer wide={false}>
+    <p className="text-destructive">Error: {error?.message}</p>
+  </PageContainer>
 )
 
 export const Empty = () => (
-  <div className="p-6">
-    <Card>
-      <CardContent className="py-8 text-center">
-        <p className="text-muted-foreground">
-          No results yet — the leaderboard fills in once a round is complete.
-        </p>
-      </CardContent>
+  <PageContainer wide={false}>
+    <Card className="py-8 text-center">
+      <p className="text-muted-foreground">
+        No results yet — the leaderboard fills in once a round is complete.
+      </p>
     </Card>
-  </div>
+  </PageContainer>
 )
 
 const initialsOf = (name: string) =>
@@ -81,92 +82,91 @@ export const Success = ({
     : []
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 p-6">
+    <PageContainer wide={false}>
+      <Button asChild variant="ghost" className="mb-3.5 -ml-1">
+        <Link to={routes.league({ id: league.id })}>
+          <ArrowLeft className="h-4 w-4" />
+          Back to league
+        </Link>
+      </Button>
+
+      <h1 className="mb-1 text-[38px]">Leaderboard</h1>
+      <p className="mb-5 text-muted-foreground">
+        {league.name} · cumulative points across every round.
+      </p>
+
       {winners.length > 0 && (
-        <Card className="border-amber-500/40 bg-amber-500/5">
-          <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
-            <Crown className="h-10 w-10 text-amber-400" />
-            <p className="text-sm uppercase tracking-wide text-muted-foreground">
-              {winners.length > 1 ? 'Co-champions' : 'Champion'}
-            </p>
-            <p className="text-2xl font-bold">
-              {winners.map((w) => w.user.displayName).join(' & ')}
-            </p>
-            <p className="text-muted-foreground">
-              {topPoints} points across the season
-            </p>
-          </CardContent>
+        <Card className="mb-5 items-center gap-2 border border-brand2 bg-brand2-100 py-8 text-center">
+          <Crown className="h-10 w-10 text-brand2-700" />
+          <p className="text-sm uppercase tracking-wide text-muted-foreground">
+            {winners.length > 1 ? 'Co-champions' : 'Champion'}
+          </p>
+          <p className="text-2xl font-bold">
+            {winners.map((w) => w.user.displayName).join(' & ')}
+          </p>
+          <p className="text-muted-foreground">
+            {topPoints} points across the season
+          </p>
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle>Standings</CardTitle>
-          <CardDescription>
-            Cumulative points across every completed round.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {leagueLeaderboard.map((entry, index) => {
-              const position = index + 1
-              const isCurrentUser = entry.user.id === currentUser?.id
-              const topThree = position <= 3
+      <Card className="gap-2.5">
+        {leagueLeaderboard.map((entry, index) => {
+          const position = index + 1
+          const isCurrentUser = entry.user.id === currentUser?.id
+          const topThree = position <= 3
 
-              return (
-                <div
-                  key={entry.user.id}
-                  className={`flex items-center gap-3 rounded-lg p-2 ${
-                    isCurrentUser
-                      ? 'border border-primary/20 bg-primary/10'
-                      : ''
-                  }`}
-                >
-                  <div
-                    className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-sm font-medium ${
-                      topThree
-                        ? 'bg-gradient-to-r from-purple-500 to-green-500 text-white'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {position}
-                  </div>
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback
-                      className={
-                        topThree ? 'bg-primary text-primary-foreground' : ''
-                      }
-                    >
-                      {initialsOf(entry.user.displayName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 truncate">
-                    <p className="truncate text-sm font-medium">
-                      {entry.user.displayName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {entry.submissionCount} submission
-                      {entry.submissionCount === 1 ? '' : 's'}
-                      {entry.roundsWon > 0 && (
-                        <>
-                          <span className="mx-1">·</span>
-                          {entry.roundsWon}{' '}
-                          <Trophy className="mb-0.5 inline h-3 w-3" /> won
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">
-                      {entry.totalPoints} pts
-                    </p>
-                  </div>
+          return (
+            <div
+              key={entry.user.id}
+              className={cn(
+                'flex items-center gap-3.5 rounded-2xl px-2 py-1.5',
+                isCurrentUser && 'bg-brand-100'
+              )}
+            >
+              <span
+                className={cn(
+                  'grid size-8 flex-none place-items-center rounded-full text-sm font-bold',
+                  topThree
+                    ? 'bg-brand-600 text-white'
+                    : 'bg-sand-200 text-sand-700'
+                )}
+              >
+                {position}
+              </span>
+              <Avatar className="size-9">
+                <AvatarFallback className="text-[13px]">
+                  {initialsOf(entry.user.displayName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">
+                  {entry.user.displayName}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {entry.submissionCount} submission
+                  {entry.submissionCount === 1 ? '' : 's'}
+                  {entry.roundsWon > 0 && (
+                    <>
+                      <span className="mx-1">·</span>
+                      {entry.roundsWon}{' '}
+                      <Trophy className="mb-0.5 inline h-3 w-3" /> won
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="font-heading text-xl leading-none">
+                  {entry.totalPoints}
                 </div>
-              )
-            })}
-          </div>
-        </CardContent>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  points
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </Card>
-    </div>
+    </PageContainer>
   )
 }

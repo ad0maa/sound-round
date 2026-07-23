@@ -4,9 +4,9 @@
  * design system.
  */
 export const inputClassName =
-  'border-input placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+  'border-input placeholder:text-muted-foreground selection:bg-brand selection:text-white bg-card flex h-9 w-full min-w-0 rounded-full border px-3.5 py-1 text-sm caret-brand transition-colors outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 hover:border-foreground/45 focus-visible:border-brand'
 
-export const inputErrorClassName = `${inputClassName} border-destructive ring-destructive/20`
+export const inputErrorClassName = `${inputClassName} border-destructive`
 
 export const labelClassName =
   'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-50'

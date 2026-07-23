@@ -4,6 +4,7 @@ import { Link, navigate, routes } from '@cedarjs/router'
 import { Metadata, useMutation } from '@cedarjs/web'
 import { toast } from '@cedarjs/web/toast'
 
+import PageContainer from 'src/components/PageContainer/PageContainer'
 import TrackSearch, {
   type TrackResult,
 } from 'src/components/TrackSearch/TrackSearch'
@@ -70,9 +71,9 @@ const SubmitSongPage = ({ id, roundId }: SubmitSongPageProps) => {
     <>
       <Metadata title="Submit a Song" />
 
-      <div className="mx-auto w-full max-w-lg space-y-4 p-6">
+      <PageContainer className="max-w-lg space-y-4" wide={false}>
         <div>
-          <h1 className="text-2xl font-bold">Submit a Song</h1>
+          <h1 className="text-[32px]">Submit a Song</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Search for a track or paste a link.
           </p>
@@ -80,7 +81,7 @@ const SubmitSongPage = ({ id, roundId }: SubmitSongPageProps) => {
 
         {selectedTrack ? (
           <>
-            <Card className="border-primary">
+            <Card className="border border-brand">
               <CardContent className="flex items-center gap-4 py-4">
                 {selectedTrack.artworkUrl ? (
                   <img
@@ -148,7 +149,7 @@ const SubmitSongPage = ({ id, roundId }: SubmitSongPageProps) => {
             </Button>
           </>
         )}
-      </div>
+      </PageContainer>
     </>
   )
 }
