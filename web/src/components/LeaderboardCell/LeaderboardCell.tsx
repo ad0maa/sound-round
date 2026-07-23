@@ -1,4 +1,4 @@
-import { Trophy } from 'lucide-react'
+import { Crown, Trophy } from 'lucide-react'
 import type {
   FindLeagueLeaderboardQuery,
   FindLeagueLeaderboardQueryVariables,
@@ -21,6 +21,10 @@ export const QUERY: TypedDocumentNode<
   FindLeagueLeaderboardQueryVariables
 > = gql`
   query FindLeagueLeaderboardQuery($leagueId: String!) {
+    league(id: $leagueId) {
+      id
+      isFinished
+    }
     leagueLeaderboard(leagueId: $leagueId) {
       totalPoints
       submissionCount
@@ -62,14 +66,39 @@ const initialsOf = (name: string) =>
     .toUpperCase()
 
 export const Success = ({
+  league,
   leagueLeaderboard,
 }: {
+  league: FindLeagueLeaderboardQuery['league']
   leagueLeaderboard: FindLeagueLeaderboardQuery['leagueLeaderboard']
 }) => {
   const { currentUser } = useAuth()
 
+  // Winner(s): leading entries sharing the top score (co-champions on a tie).
+  const topPoints = leagueLeaderboard[0]?.totalPoints
+  const winners = league.isFinished
+    ? leagueLeaderboard.filter((e) => e.totalPoints === topPoints)
+    : []
+
   return (
-    <div className="mx-auto w-full max-w-2xl p-6">
+    <div className="mx-auto w-full max-w-2xl space-y-6 p-6">
+      {winners.length > 0 && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
+            <Crown className="h-10 w-10 text-amber-400" />
+            <p className="text-sm uppercase tracking-wide text-muted-foreground">
+              {winners.length > 1 ? 'Co-champions' : 'Champion'}
+            </p>
+            <p className="text-2xl font-bold">
+              {winners.map((w) => w.user.displayName).join(' & ')}
+            </p>
+            <p className="text-muted-foreground">
+              {topPoints} points across the season
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle>Standings</CardTitle>

@@ -34,6 +34,8 @@ const NewRoundPage = ({ id }: NewRoundPageProps) => {
   const [theme, setTheme] = useState('')
   const [description, setDescription] = useState('')
   const [songsPerPlayer, setSongsPerPlayer] = useState(1)
+  const [submissionDurationHours, setSubmissionDurationHours] = useState('')
+  const [votingDurationHours, setVotingDurationHours] = useState('')
 
   const [createRound, { loading }] = useMutation(CREATE_ROUND, {
     onCompleted: (data) => {
@@ -56,6 +58,12 @@ const NewRoundPage = ({ id }: NewRoundPageProps) => {
           theme: theme.trim(),
           description: description.trim() || null,
           songsPerPlayer,
+          submissionDurationHours: submissionDurationHours
+            ? parseInt(submissionDurationHours, 10)
+            : null,
+          votingDurationHours: votingDurationHours
+            ? parseInt(votingDurationHours, 10)
+            : null,
         },
       },
     })
@@ -105,6 +113,30 @@ const NewRoundPage = ({ id }: NewRoundPageProps) => {
                     setSongsPerPlayer(parseInt(e.target.value, 10) || 1)
                   }
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="submissionHours">Submission (hrs)</Label>
+                  <Input
+                    id="submissionHours"
+                    type="number"
+                    min={1}
+                    value={submissionDurationHours}
+                    onChange={(e) => setSubmissionDurationHours(e.target.value)}
+                    placeholder="League default"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="votingHours">Voting (hrs)</Label>
+                  <Input
+                    id="votingHours"
+                    type="number"
+                    min={1}
+                    value={votingDurationHours}
+                    onChange={(e) => setVotingDurationHours(e.target.value)}
+                    placeholder="League default"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

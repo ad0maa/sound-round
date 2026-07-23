@@ -33,6 +33,10 @@ export const QUERY: TypedDocumentNode<
       submitter {
         displayName
       }
+      votes {
+        voterName
+        points
+      }
     }
   }
 `
@@ -117,11 +121,37 @@ export const Success = ({
                 </button>
 
                 {expandedId === sub.id && (
-                  <TrackEmbed
-                    platform={sub.platform}
-                    platformTrackId={sub.platformTrackId}
-                    trackUrl={sub.trackUrl}
-                  />
+                  <>
+                    <TrackEmbed
+                      platform={sub.platform}
+                      platformTrackId={sub.platformTrackId}
+                      trackUrl={sub.trackUrl}
+                    />
+                    <div className="rounded-md bg-muted/40 p-3">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        Votes
+                      </p>
+                      {sub.votes && sub.votes.length > 0 ? (
+                        <ul className="space-y-1">
+                          {sub.votes.map((v, vi) => (
+                            <li
+                              key={vi}
+                              className="flex items-center justify-between text-sm"
+                            >
+                              <span>{v.voterName}</span>
+                              <span className="font-medium">
+                                {v.points > 0 ? `+${v.points}` : v.points}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No votes for this song.
+                        </p>
+                      )}
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
