@@ -3,6 +3,7 @@ import { UserInputError } from '@cedarjs/graphql-server'
 import { db } from 'src/lib/db'
 import {
   advanceToResults,
+  checkAutoAdvanceSubmission,
   settleLeagueRounds,
   settleRound,
 } from 'src/lib/roundManager'
@@ -56,6 +57,102 @@ describe('deadline settlement', () => {
       })
       expect(first.state).toBe('submitting')
       expect(first.submissionsClose).not.toBeNull()
+    }
+  )
+})
+
+describe('pacing', () => {
+  scenario(
+    'chill never ends a phase early, even once everyone has submitted',
+    async (scenario: StandardScenario) => {
+      asUser(scenario.user.alice)
+
+      const advanced = await checkAutoAdvanceSubmission(
+        scenario.round.chillSubmitting.id
+      )
+      expect(advanced).toBeNull()
+
+      const round = await db.round.findUnique({
+        where: { id: scenario.round.chillSubmitting.id },
+      })
+      expect(round.state).toBe('submitting')
+    }
+  )
+
+  scenario(
+    'fast ends a phase early but leaves the voting deadline where it was',
+    async (scenario: StandardScenario) => {
+      asUser(scenario.user.alice)
+
+      const scheduledVotingClose = scenario.round.fastSubmitting.votingClose
+
+      const advanced = await checkAutoAdvanceSubmission(
+        scenario.round.fastSubmitting.id
+      )
+
+      expect(advanced.state).toBe('voting')
+      expect(advanced.votingClose.getTime()).toBe(
+        scheduledVotingClose.getTime()
+      )
+    }
+  )
+
+  scenario(
+    'fast shows results early but holds the next round until its scheduled start',
+    async (scenario: StandardScenario) => {
+      asUser(scenario.user.alice)
+
+      // Voting deadline is still 48h out, so results are early.
+      const done = await advanceToResults(
+        scenario.round.fastSubmitting,
+        scenario.league.fast
+      )
+      expect(done.state).toBe('results')
+
+      let next = await db.round.findUnique({
+        where: { id: scenario.round.fastNext.id },
+      })
+      expect(next.state).toBe('upcoming')
+
+      // Once that deadline passes, the next round opens on its own.
+      await db.round.update({
+        where: { id: scenario.round.fastSubmitting.id },
+        data: { votingClose: new Date(Date.now() - 60 * 1000) },
+      })
+      await settleLeagueRounds(scenario.league.fast.id)
+
+      next = await db.round.findUnique({
+        where: { id: scenario.round.fastNext.id },
+      })
+      expect(next.state).toBe('submitting')
+    }
+  )
+
+  scenario(
+    'a scheduled round is anchored to the previous voting deadline, not to now',
+    async (scenario: StandardScenario) => {
+      asUser(scenario.user.alice)
+
+      const previousVotingClose = new Date(Date.now() - 60 * 1000)
+      await db.round.update({
+        where: { id: scenario.round.chillSubmitting.id },
+        data: { state: 'results', votingClose: previousVotingClose },
+      })
+
+      await settleLeagueRounds(scenario.league.chill.id)
+
+      const next = await db.round.findUnique({
+        where: { id: scenario.round.chillNext.id },
+      })
+      expect(next.state).toBe('submitting')
+      expect(next.submissionsOpen.getTime()).toBe(previousVotingClose.getTime())
+      // 72h submission window then a 48h voting window, both league defaults.
+      expect(next.submissionsClose.getTime()).toBe(
+        previousVotingClose.getTime() + 72 * 60 * 60 * 1000
+      )
+      expect(next.votingClose.getTime()).toBe(
+        previousVotingClose.getTime() + (72 + 48) * 60 * 60 * 1000
+      )
     }
   )
 })

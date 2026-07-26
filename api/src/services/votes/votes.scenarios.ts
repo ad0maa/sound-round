@@ -27,21 +27,27 @@ const user = (n: string) => ({
 // `main` league: downvotes enabled, capped points. Round 1 is mid-voting with
 // a future deadline (castVotes settles first — a past deadline would flip the
 // round out from under the tests). Round 2 exists so auto-advance can open it.
+//
+// Budgets are deliberately set so the caps bite without pinning the ballot to a
+// single legal allocation: with 2 votable songs, 6 upvote points and a 5-point
+// cap there are several ways to spend out, which the re-casting tests rely on.
 export const standard = defineScenario<CreateArgs>({
   user: {
     alice: user('alice'),
     bob: user('bob'),
     carol: user('carol'),
+    dave: user('dave'),
   },
   league: {
     main: (scenario) => ({
       data: {
         name: 'Main League',
         creatorId: scenario.user.alice.id,
-        upvotesPerRound: 10,
+        upvotesPerRound: 6,
         downvotesEnabled: true,
         downvotesPerRound: 3,
         maxPointsPerSong: 5,
+        maxDownvotesPerSong: 2,
         totalRounds: 2,
         members: {
           create: [
@@ -52,6 +58,8 @@ export const standard = defineScenario<CreateArgs>({
         },
       },
     }),
+    // No downvotes and no per-song cap, so a voter can sink the whole budget
+    // into one song and leave another at zero.
     noDown: (scenario) => ({
       data: {
         name: 'No Downvotes League',
@@ -62,6 +70,7 @@ export const standard = defineScenario<CreateArgs>({
           create: [
             { userId: scenario.user.alice.id, role: 'creator' },
             { userId: scenario.user.bob.id, role: 'player' },
+            { userId: scenario.user.dave.id, role: 'player' },
           ],
         },
       },
@@ -149,15 +158,26 @@ export const standard = defineScenario<CreateArgs>({
         artistName: 'NoDown Bob Artist',
       },
     }),
+    noDownFromDave: (scenario) => ({
+      data: {
+        roundId: scenario.round.noDownVoting.id,
+        userId: scenario.user.dave.id,
+        platform: 'soundcloud',
+        platformTrackId: 'nodown-dave-track',
+        trackUrl: 'https://soundcloud.com/nodowndave',
+        trackName: 'NoDown Dave Song',
+        artistName: 'NoDown Dave Artist',
+      },
+    }),
   },
 })
 
 export type StandardScenario = {
-  user: Record<'alice' | 'bob' | 'carol', User>
+  user: Record<'alice' | 'bob' | 'carol' | 'dave', User>
   league: Record<'main' | 'noDown', League>
   round: Record<'voting' | 'next' | 'noDownVoting' | 'noDownSubmitting', Round>
   submission: Record<
-    'fromAlice' | 'fromBob' | 'fromCarol' | 'noDownFromBob',
+    'fromAlice' | 'fromBob' | 'fromCarol' | 'noDownFromBob' | 'noDownFromDave',
     Submission
   >
 }

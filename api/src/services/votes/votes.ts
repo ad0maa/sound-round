@@ -9,6 +9,7 @@ import {
   settleLeagueRounds,
   settleRound,
 } from 'src/lib/roundManager'
+import { ballotRemaining, voteCaps } from 'src/lib/voteBudget'
 
 const currentUserId = () => context.currentUser.id as string
 
@@ -42,53 +43,82 @@ export const castVotes: MutationResolvers['castVotes'] = async ({
 
   const league = await db.league.findUnique({ where: { id: round.leagueId } })
 
-  // Validate vote budgets
-  const positiveTotal = votes
-    .filter((v) => v.points > 0)
-    .reduce((sum, v) => sum + v.points, 0)
-  const negativeTotal = Math.abs(
-    votes.filter((v) => v.points < 0).reduce((sum, v) => sum + v.points, 0)
-  )
+  // The budget depends on how many songs this voter can actually vote on: with
+  // a per-song cap and few players, the round can't absorb the league's nominal
+  // per-round allowance. See src/lib/voteBudget.ts.
+  const roundSubmissions = await db.submission.findMany({ where: { roundId } })
+  const byId = new Map(roundSubmissions.map((s) => [s.id, s]))
+  const votable = roundSubmissions.filter((s) => s.userId !== currentUserId())
 
-  if (positiveTotal > league.upvotesPerRound) {
-    throw new UserInputError(
-      `Cannot distribute more than ${league.upvotesPerRound} upvote points`
-    )
-  }
-  if (negativeTotal > 0 && !league.downvotesEnabled) {
-    throw new UserInputError('Downvotes are not enabled')
-  }
-  if (negativeTotal > league.downvotesPerRound) {
-    throw new UserInputError(
-      `Cannot distribute more than ${league.downvotesPerRound} downvote points`
-    )
-  }
-
-  if (league.maxPointsPerSong) {
-    for (const v of votes) {
-      if (Math.abs(v.points) > league.maxPointsPerSong) {
-        throw new UserInputError(
-          `Cannot give more than ${league.maxPointsPerSong} points to a single song`
-        )
-      }
-    }
-  }
-
-  // Validate submissions belong to this round; no self-voting
-  const submissionIds = votes.map((v) => v.submissionId)
-  const foundSubmissions = await db.submission.findMany({
-    where: { id: { in: submissionIds } },
-  })
-  const byId = new Map(foundSubmissions.map((s) => [s.id, s]))
-
+  // Validate submissions belong to this round; no self-voting; one vote each
+  const seen = new Set<string>()
   for (const v of votes) {
     const submission = byId.get(v.submissionId)
-    if (!submission || submission.roundId !== roundId) {
+    if (!submission) {
       throw new UserInputError(`Invalid submission: ${v.submissionId}`)
     }
     if (submission.userId === currentUserId()) {
       throw new UserInputError('Cannot vote on your own submission')
     }
+    if (seen.has(v.submissionId)) {
+      throw new UserInputError('Each song can only be given one vote')
+    }
+    seen.add(v.submissionId)
+  }
+
+  const { capUp, capDown } = voteCaps(league)
+  const hasDownvote = votes.some((v) => v.points < 0)
+
+  if (hasDownvote && !league.downvotesEnabled) {
+    throw new UserInputError('Downvotes are not enabled')
+  }
+
+  for (const v of votes) {
+    if (v.points > capUp) {
+      throw new UserInputError(
+        `Cannot give more than ${capUp} point${capUp === 1 ? '' : 's'} to a single song`
+      )
+    }
+    if (-v.points > capDown) {
+      throw new UserInputError(
+        `Cannot give more than ${capDown} downvote${capDown === 1 ? '' : 's'} to a single song`
+      )
+    }
+  }
+
+  // Score every votable song, including the ones left at zero — the budget
+  // helpers need the full ballot to tell whether anything is still placeable.
+  const pointsBySubmission = new Map(
+    votes.map((v) => [v.submissionId, v.points])
+  )
+  const ballot = ballotRemaining({
+    league,
+    points: votable.map((s) => pointsBySubmission.get(s.id) ?? 0),
+  })
+
+  if (ballot.upRemaining < 0) {
+    throw new UserInputError(
+      `Cannot distribute more than ${ballot.effectiveUp} upvote points`
+    )
+  }
+  if (ballot.downRemaining < 0) {
+    throw new UserInputError(
+      `Cannot distribute more than ${ballot.effectiveDown} downvote points`
+    )
+  }
+
+  // A ballot has to be spent out before it counts. Being specific here matters:
+  // the client gates the submit button on the same rule, so any disagreement
+  // shows up as a readable message rather than a masked server error.
+  if (ballot.canPlaceUp) {
+    throw new UserInputError(
+      `You still have ${ballot.upRemaining} of ${ballot.effectiveUp} points to place`
+    )
+  }
+  if (ballot.canPlaceDown) {
+    throw new UserInputError(
+      `You still have ${ballot.downRemaining} of ${ballot.effectiveDown} downvotes to place`
+    )
   }
 
   // Bulk replace: delete this voter's existing votes, insert the new set

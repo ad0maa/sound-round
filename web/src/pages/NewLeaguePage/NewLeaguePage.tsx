@@ -4,6 +4,13 @@ import { navigate, routes } from '@cedarjs/router'
 import { Metadata, useMutation } from '@cedarjs/web'
 import { toast } from '@cedarjs/web/toast'
 
+import {
+  DAY_OPTIONS,
+  defaultRules,
+  type LeagueRulesValues,
+  toLeagueRulesInput,
+} from 'src/components/LeagueRulesFields/leagueRules'
+import LeagueRulesFields from 'src/components/LeagueRulesFields/LeagueRulesFields'
 import PageContainer from 'src/components/PageContainer/PageContainer'
 import PageHeader from 'src/components/PageHeader/PageHeader'
 import { Button } from 'src/components/ui/button'
@@ -16,6 +23,13 @@ import {
 } from 'src/components/ui/card'
 import { Input } from 'src/components/ui/input'
 import { Label } from 'src/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'src/components/ui/select'
 import { Switch } from 'src/components/ui/switch'
 
 const CREATE_LEAGUE = gql`
@@ -29,35 +43,77 @@ const CREATE_LEAGUE = gql`
 type RoundDraft = {
   theme: string
   description: string
-  submissionDurationHours: string
-  votingDurationHours: string
+  /** Empty means "use the league default". */
+  submissionDays: string
+  votingDays: string
 }
 
 const emptyRound = (): RoundDraft => ({
   theme: '',
   description: '',
-  submissionDurationHours: '',
-  votingDurationHours: '',
+  submissionDays: '',
+  votingDays: '',
 })
+
+/** Sentinel for "no override" — Radix Select can't hold an empty string value. */
+const INHERIT = 'inherit'
+
+const roundDaysToHours = (days: string) =>
+  days ? parseInt(days, 10) * 24 : null
+
+type RoundDaySelectProps = {
+  id: string
+  label: string
+  value: string
+  defaultDays: number
+  onChange: (days: string) => void
+}
+
+/** Per-round window override, defaulting to whatever the league is set to. */
+const RoundDaySelect = ({
+  id,
+  label,
+  value,
+  defaultDays,
+  onChange,
+}: RoundDaySelectProps) => (
+  <div className="space-y-2">
+    <Label htmlFor={id}>{label}</Label>
+    <Select
+      value={value || INHERIT}
+      onValueChange={(next) => onChange(next === INHERIT ? '' : next)}
+    >
+      <SelectTrigger id={id} className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={INHERIT}>
+          League default ({defaultDays} {defaultDays === 1 ? 'day' : 'days'})
+        </SelectItem>
+        {DAY_OPTIONS.map((days) => (
+          <SelectItem key={days} value={String(days)}>
+            {days} {days === 1 ? 'day' : 'days'}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)
 
 const NewLeaguePage = () => {
   const [step, setStep] = useState<1 | 2>(1)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [upvotesPerRound, setUpvotesPerRound] = useState(10)
-  const [downvotesEnabled, setDownvotesEnabled] = useState(false)
-  const [downvotesPerRound, setDownvotesPerRound] = useState(0)
-  const [maxPointsPerSong, setMaxPointsPerSong] = useState('')
-  const [uniqueArtists, setUniqueArtists] = useState(false)
-  const [totalRounds, setTotalRounds] = useState(5)
-  const [maxPlayers, setMaxPlayers] = useState(20)
   const [isPublic, setIsPublic] = useState(false)
-  const [submissionDeadlineHours, setSubmissionDeadlineHours] = useState(72)
-  const [votingDeadlineHours, setVotingDeadlineHours] = useState(48)
   const [startsAt, setStartsAt] = useState('')
+  const [totalRounds, setTotalRounds] = useState('5')
+  const [rules, setRules] = useState<LeagueRulesValues>(defaultRules)
 
   const [roundDrafts, setRoundDrafts] = useState<RoundDraft[]>([emptyRound()])
+
+  const updateRules = (patch: Partial<LeagueRulesValues>) =>
+    setRules((prev) => ({ ...prev, ...patch }))
 
   const [createLeague, { loading }] = useMutation(CREATE_LEAGUE, {
     onCompleted: (data) => {
@@ -72,9 +128,19 @@ const NewLeaguePage = () => {
       toast.error('League name is required')
       return
     }
-    // Resize the drafts array to totalRounds, keeping anything already typed.
+    const rounds = parseInt(totalRounds, 10)
+    if (Number.isNaN(rounds) || rounds < 1 || rounds > 30) {
+      toast.error('Pick between 1 and 30 rounds')
+      return
+    }
+    const built = toLeagueRulesInput(rules)
+    if ('error' in built) {
+      toast.error(built.error)
+      return
+    }
+    // Resize the drafts array to the round count, keeping anything typed.
     setRoundDrafts((drafts) =>
-      Array.from({ length: totalRounds }, (_, i) => drafts[i] ?? emptyRound())
+      Array.from({ length: rounds }, (_, i) => drafts[i] ?? emptyRound())
     )
     setStep(2)
   }
@@ -91,32 +157,26 @@ const NewLeaguePage = () => {
       toast.error('Every round needs a theme')
       return
     }
+    const built = toLeagueRulesInput(rules)
+    if ('error' in built) {
+      toast.error(built.error)
+      setStep(1)
+      return
+    }
+
     createLeague({
       variables: {
         input: {
+          ...built.input,
           name: name.trim(),
           description: description.trim() || null,
           isPublic,
-          upvotesPerRound,
-          downvotesEnabled,
-          downvotesPerRound: downvotesEnabled ? downvotesPerRound : 0,
-          maxPointsPerSong: maxPointsPerSong
-            ? parseInt(maxPointsPerSong, 10)
-            : null,
-          uniqueArtists,
-          maxPlayers,
-          submissionDeadlineHours,
-          votingDeadlineHours,
           startsAt: startsAt ? new Date(startsAt).toISOString() : null,
           rounds: roundDrafts.map((d) => ({
             theme: d.theme.trim(),
             description: d.description.trim() || null,
-            submissionDurationHours: d.submissionDurationHours
-              ? parseInt(d.submissionDurationHours, 10)
-              : null,
-            votingDurationHours: d.votingDurationHours
-              ? parseInt(d.votingDurationHours, 10)
-              : null,
+            submissionDurationHours: roundDaysToHours(d.submissionDays),
+            votingDurationHours: roundDaysToHours(d.votingDays),
           })),
         },
       },
@@ -207,136 +267,25 @@ const NewLeaguePage = () => {
                     Tune scoring and rounds — sensible defaults included.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="totalRounds">Rounds</Label>
-                      <Input
-                        id="totalRounds"
-                        type="number"
-                        min={1}
-                        max={30}
-                        value={totalRounds}
-                        onChange={(e) =>
-                          setTotalRounds(
-                            Math.min(30, parseInt(e.target.value, 10) || 1)
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="maxPlayers">Max players</Label>
-                      <Input
-                        id="maxPlayers"
-                        type="number"
-                        min={2}
-                        value={maxPlayers}
-                        onChange={(e) =>
-                          setMaxPlayers(parseInt(e.target.value, 10) || 2)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="upvotes">Points per round</Label>
-                      <Input
-                        id="upvotes"
-                        type="number"
-                        min={1}
-                        value={upvotesPerRound}
-                        onChange={(e) =>
-                          setUpvotesPerRound(parseInt(e.target.value, 10) || 1)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="maxPerSong">Max points per song</Label>
-                      <Input
-                        id="maxPerSong"
-                        type="number"
-                        min={1}
-                        value={maxPointsPerSong}
-                        onChange={(e) => setMaxPointsPerSong(e.target.value)}
-                        placeholder="No cap"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="submissionHours">
-                        Submission window (hrs)
-                      </Label>
-                      <Input
-                        id="submissionHours"
-                        type="number"
-                        min={1}
-                        value={submissionDeadlineHours}
-                        onChange={(e) =>
-                          setSubmissionDeadlineHours(
-                            parseInt(e.target.value, 10) || 1
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="votingHours">Voting window (hrs)</Label>
-                      <Input
-                        id="votingHours"
-                        type="number"
-                        min={1}
-                        value={votingDeadlineHours}
-                        onChange={(e) =>
-                          setVotingDeadlineHours(
-                            parseInt(e.target.value, 10) || 1
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="uniqueArtists">Unique artists</Label>
-                      <p className="text-xs text-muted-foreground">
-                        One song per artist per round
-                      </p>
-                    </div>
-                    <Switch
-                      id="uniqueArtists"
-                      checked={uniqueArtists}
-                      onCheckedChange={setUniqueArtists}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="downvotes">Downvotes</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Allow negative points
-                      </p>
-                    </div>
-                    <Switch
-                      id="downvotes"
-                      checked={downvotesEnabled}
-                      onCheckedChange={setDownvotesEnabled}
-                    />
-                  </div>
-
-                  {downvotesEnabled && (
-                    <div className="space-y-2">
-                      <Label htmlFor="downvotesPerRound">
-                        Downvote points per round
-                      </Label>
-                      <Input
-                        id="downvotesPerRound"
-                        type="number"
-                        min={0}
-                        value={downvotesPerRound}
-                        onChange={(e) =>
-                          setDownvotesPerRound(
-                            parseInt(e.target.value, 10) || 0
-                          )
-                        }
-                      />
-                    </div>
-                  )}
+                <CardContent>
+                  <LeagueRulesFields
+                    values={rules}
+                    onChange={updateRules}
+                    leadingFields={
+                      <div className="space-y-2">
+                        <Label htmlFor="totalRounds">Rounds</Label>
+                        <Input
+                          id="totalRounds"
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={30}
+                          value={totalRounds}
+                          onChange={(e) => setTotalRounds(e.target.value)}
+                        />
+                      </div>
+                    }
+                  />
                 </CardContent>
               </Card>
 
@@ -402,36 +351,24 @@ const NewLeaguePage = () => {
                         Custom durations
                       </summary>
                       <div className="mt-3 grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`sub-${i}`}>Submission (hrs)</Label>
-                          <Input
-                            id={`sub-${i}`}
-                            type="number"
-                            min={1}
-                            value={draft.submissionDurationHours}
-                            onChange={(e) =>
-                              updateDraft(i, {
-                                submissionDurationHours: e.target.value,
-                              })
-                            }
-                            placeholder={String(submissionDeadlineHours)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`vote-${i}`}>Voting (hrs)</Label>
-                          <Input
-                            id={`vote-${i}`}
-                            type="number"
-                            min={1}
-                            value={draft.votingDurationHours}
-                            onChange={(e) =>
-                              updateDraft(i, {
-                                votingDurationHours: e.target.value,
-                              })
-                            }
-                            placeholder={String(votingDeadlineHours)}
-                          />
-                        </div>
+                        <RoundDaySelect
+                          id={`sub-${i}`}
+                          label="Days to submit"
+                          value={draft.submissionDays}
+                          defaultDays={rules.submissionDays}
+                          onChange={(submissionDays) =>
+                            updateDraft(i, { submissionDays })
+                          }
+                        />
+                        <RoundDaySelect
+                          id={`vote-${i}`}
+                          label="Days to vote"
+                          value={draft.votingDays}
+                          defaultDays={rules.votingDays}
+                          onChange={(votingDays) =>
+                            updateDraft(i, { votingDays })
+                          }
+                        />
                       </div>
                     </details>
                   </CardContent>

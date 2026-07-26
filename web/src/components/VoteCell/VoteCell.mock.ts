@@ -42,6 +42,7 @@ export const standard = (/* vars, { ctx, req } */) => ({
     maxPointsPerSong: null,
     downvotesEnabled: false,
     downvotesPerRound: 0,
+    maxDownvotesPerSong: null,
   },
   round: {
     __typename: 'Round' as const,
@@ -60,6 +61,7 @@ export const withDownvotes = (/* vars, { ctx, req } */) => ({
     maxPointsPerSong: 5,
     downvotesEnabled: true,
     downvotesPerRound: 3,
+    maxDownvotesPerSong: 2,
   },
   round: {
     __typename: 'Round' as const,

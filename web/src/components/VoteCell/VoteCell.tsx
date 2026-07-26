@@ -26,6 +26,7 @@ import {
 import { Button } from 'src/components/ui/button'
 import { Card } from 'src/components/ui/card'
 import { cn } from 'src/lib/utils'
+import { ballotRemaining } from 'src/lib/voteBudget'
 
 export const QUERY: TypedDocumentNode<FindVoteQuery, FindVoteQueryVariables> =
   gql`
@@ -36,6 +37,7 @@ export const QUERY: TypedDocumentNode<FindVoteQuery, FindVoteQueryVariables> =
         maxPointsPerSong
         downvotesEnabled
         downvotesPerRound
+        maxDownvotesPerSong
       }
       round(id: $roundId) {
         id
@@ -113,10 +115,7 @@ const VoteContent = ({
 
   const { currentTrack, isPlaying, playAll, playTrack, togglePlay } =
     usePlayer()
-  const upvotesPerRound = league.upvotesPerRound
-  const maxPointsPerSong = league.maxPointsPerSong
   const downvotesEnabled = league.downvotesEnabled
-  const downvotesPerRound = league.downvotesPerRound
 
   const [votes, setVotes] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {}
@@ -127,35 +126,45 @@ const VoteContent = ({
   })
   const [submitting, setSubmitting] = useState(false)
 
-  const pointsUsed = Object.values(votes).reduce(
-    (sum, v) => sum + Math.max(0, v),
-    0
-  )
-  const pointsRemaining = upvotesPerRound - pointsUsed
-  const downvotesUsed = Object.values(votes).reduce(
-    (sum, v) => sum + Math.max(0, -v),
-    0
-  )
-  const downvotesRemaining = downvotesPerRound - downvotesUsed
+  /** The ballot as the budget helpers want it: one entry per votable song. */
+  const ballotFor = (current: Record<string, number>) =>
+    ballotRemaining(
+      league,
+      others.map((s) => current[s.id] ?? 0)
+    )
 
-  const setPoints = (submissionId: string, points: number) => {
+  const ballot = ballotFor(votes)
+  const { capUp, capDown, effectiveUp, effectiveDown } = ballot
+  const ballotComplete = !ballot.canPlaceUp && !ballot.canPlaceDown
+
+  /**
+   * Nudge one song's score by ±1.
+   *
+   * Everything is derived from `prev` inside the updater rather than from the
+   * render's snapshot. Taking a delta matters as much as clamping against
+   * `prev`: an absolute target computed at render time (`pts + 1`) collapses
+   * to the same value for every click in a batch, so a burst of clicks either
+   * registered once or overspent the budget the server enforces.
+   */
+  const stepPoints = (submissionId: string, delta: number) => {
     setVotes((prev) => {
+      const live = ballotFor(prev)
       const current = prev[submissionId] ?? 0
-      let next = points
-      if (maxPointsPerSong != null) {
-        next = Math.max(-maxPointsPerSong, Math.min(maxPointsPerSong, next))
-      }
+
+      let next = Math.max(-capDown, Math.min(capUp, current + delta))
       if (!downvotesEnabled && next < 0) {
         next = 0
       }
+
       const upDiff = Math.max(0, next) - Math.max(0, current)
-      if (upDiff > 0 && pointsRemaining < upDiff) {
-        next = Math.max(0, current) + pointsRemaining
+      if (upDiff > 0 && live.upRemaining < upDiff) {
+        next = Math.max(0, current) + live.upRemaining
       }
       const downDiff = Math.max(0, -next) - Math.max(0, -current)
-      if (downDiff > 0 && downvotesRemaining < downDiff) {
-        next = -(Math.max(0, -current) + downvotesRemaining)
+      if (downDiff > 0 && live.downRemaining < downDiff) {
+        next = -(Math.max(0, -current) + live.downRemaining)
       }
+
       return { ...prev, [submissionId]: next }
     })
   }
@@ -210,10 +219,11 @@ const VoteContent = ({
         <div>
           <h1 className="text-[36px]">Vote</h1>
           <p className="mt-1.5 max-w-[48ch] text-muted-foreground">
-            Listen to each track, then spread your {upvotesPerRound} points.
+            Listen to each track, then spread all {effectiveUp} of your points.
             Give more to your favourites.
             {downvotesEnabled &&
-              ` You also have ${downvotesPerRound} downvote${downvotesPerRound === 1 ? '' : 's'} for tracks you'd rather not hear again.`}
+              effectiveDown > 0 &&
+              ` You also have ${effectiveDown} downvote${effectiveDown === 1 ? '' : 's'} for tracks you'd rather not hear again.`}
           </p>
           {others.length > 0 && (
             <Button
@@ -231,26 +241,26 @@ const VoteContent = ({
             <div
               className={cn(
                 'font-heading text-[40px] leading-none',
-                pointsRemaining === 0 ? 'text-brand' : 'text-foreground'
+                ballot.upRemaining === 0 ? 'text-brand' : 'text-foreground'
               )}
             >
-              {pointsRemaining}
+              {ballot.upRemaining}
             </div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               points left
             </div>
           </div>
-          {downvotesEnabled && (
+          {downvotesEnabled && effectiveDown > 0 && (
             <div>
               <div
                 className={cn(
                   'font-heading text-[40px] leading-none',
-                  downvotesRemaining === 0
+                  ballot.downRemaining === 0
                     ? 'text-destructive'
                     : 'text-foreground'
                 )}
               >
-                {downvotesRemaining}
+                {ballot.downRemaining}
               </div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 downvotes left
@@ -331,13 +341,12 @@ const VoteContent = ({
                     <button
                       type="button"
                       className={stepBtnClass}
-                      onClick={() => setPoints(sub.id, pts - 1)}
+                      onClick={() => stepPoints(sub.id, -1)}
                       disabled={
                         pts <= 0 &&
                         (!downvotesEnabled ||
-                          downvotesRemaining <= 0 ||
-                          (maxPointsPerSong != null &&
-                            -pts >= maxPointsPerSong))
+                          ballot.downRemaining <= 0 ||
+                          -pts >= capDown)
                       }
                       aria-label={
                         pts > 0
@@ -358,11 +367,9 @@ const VoteContent = ({
                     <button
                       type="button"
                       className={stepBtnClass}
-                      onClick={() => setPoints(sub.id, pts + 1)}
+                      onClick={() => stepPoints(sub.id, 1)}
                       disabled={
-                        pts >= 0 &&
-                        (pointsRemaining <= 0 ||
-                          (maxPointsPerSong != null && pts >= maxPointsPerSong))
+                        pts >= 0 && (ballot.upRemaining <= 0 || pts >= capUp)
                       }
                       aria-label={
                         pts < 0
@@ -389,10 +396,17 @@ const VoteContent = ({
       <Button
         className="h-auto w-full py-3.5 text-base"
         onClick={handleSubmit}
-        disabled={submitting || others.length === 0}
+        disabled={submitting || others.length === 0 || !ballotComplete}
       >
         {submitting ? 'Submitting…' : 'Submit votes'}
       </Button>
+      {others.length > 0 && !ballotComplete && (
+        <p className="mt-2.5 text-center text-[13px] text-muted-foreground">
+          {ballot.canPlaceUp
+            ? `Place your last ${ballot.upRemaining} point${ballot.upRemaining === 1 ? '' : 's'} to submit.`
+            : `Place your last ${ballot.downRemaining} downvote${ballot.downRemaining === 1 ? '' : 's'} to submit.`}
+        </p>
+      )}
     </PageContainer>
   )
 }

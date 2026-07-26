@@ -55,6 +55,12 @@ export const standard = defineScenario<CreateArgs>({
     // Scheduled start in the past; round 1 still upcoming.
     scheduled: (scenario) =>
       leagueData('Scheduled League', scenario, { startsAt: hoursAgo(1) }),
+    // Scheduled pacing: round 1 is submitting with both deadlines already
+    // stamped (as openRoundForSubmissions does for these modes) and everyone
+    // has submitted, so only the pacing decides whether it advances early.
+    chill: (scenario) =>
+      leagueData('Chill League', scenario, { pacing: 'chill' }),
+    fast: (scenario) => leagueData('Fast League', scenario, { pacing: 'fast' }),
   },
   round: {
     expiredSubmitting: (scenario) => ({
@@ -110,6 +116,44 @@ export const standard = defineScenario<CreateArgs>({
         state: 'upcoming',
       },
     }),
+    chillSubmitting: (scenario) => ({
+      data: {
+        leagueId: scenario.league.chill.id,
+        roundNumber: 1,
+        theme: 'Chill round',
+        state: 'submitting',
+        submissionsOpen: hoursAgo(1),
+        submissionsClose: hoursFromNow(24),
+        votingClose: hoursFromNow(48),
+      },
+    }),
+    chillNext: (scenario) => ({
+      data: {
+        leagueId: scenario.league.chill.id,
+        roundNumber: 2,
+        theme: 'Chill next round',
+        state: 'upcoming',
+      },
+    }),
+    fastSubmitting: (scenario) => ({
+      data: {
+        leagueId: scenario.league.fast.id,
+        roundNumber: 1,
+        theme: 'Fast round',
+        state: 'submitting',
+        submissionsOpen: hoursAgo(1),
+        submissionsClose: hoursFromNow(24),
+        votingClose: hoursFromNow(48),
+      },
+    }),
+    fastNext: (scenario) => ({
+      data: {
+        leagueId: scenario.league.fast.id,
+        roundNumber: 2,
+        theme: 'Fast next round',
+        state: 'upcoming',
+      },
+    }),
   },
   submission: {
     inExpired: (scenario) => ({
@@ -123,19 +167,70 @@ export const standard = defineScenario<CreateArgs>({
         artistName: 'Late Artist',
       },
     }),
+    chillFromAlice: (scenario) => ({
+      data: {
+        roundId: scenario.round.chillSubmitting.id,
+        userId: scenario.user.alice.id,
+        platform: 'youtube',
+        platformTrackId: 'chill-alice',
+        trackUrl: 'https://youtube.com/watch?v=chillalice',
+        trackName: 'Chill Alice Song',
+        artistName: 'Chill Alice Artist',
+      },
+    }),
+    chillFromBob: (scenario) => ({
+      data: {
+        roundId: scenario.round.chillSubmitting.id,
+        userId: scenario.user.bob.id,
+        platform: 'youtube',
+        platformTrackId: 'chill-bob',
+        trackUrl: 'https://youtube.com/watch?v=chillbob',
+        trackName: 'Chill Bob Song',
+        artistName: 'Chill Bob Artist',
+      },
+    }),
+    fastFromAlice: (scenario) => ({
+      data: {
+        roundId: scenario.round.fastSubmitting.id,
+        userId: scenario.user.alice.id,
+        platform: 'youtube',
+        platformTrackId: 'fast-alice',
+        trackUrl: 'https://youtube.com/watch?v=fastalice',
+        trackName: 'Fast Alice Song',
+        artistName: 'Fast Alice Artist',
+      },
+    }),
+    fastFromBob: (scenario) => ({
+      data: {
+        roundId: scenario.round.fastSubmitting.id,
+        userId: scenario.user.bob.id,
+        platform: 'youtube',
+        platformTrackId: 'fast-bob',
+        trackUrl: 'https://youtube.com/watch?v=fastbob',
+        trackName: 'Fast Bob Song',
+        artistName: 'Fast Bob Artist',
+      },
+    }),
   },
 })
 
 export type StandardScenario = {
   user: Record<'alice' | 'bob', User>
-  league: Record<'expired' | 'empty' | 'cas' | 'scheduled', League>
+  league: Record<
+    'expired' | 'empty' | 'cas' | 'scheduled' | 'chill' | 'fast',
+    League
+  >
   round: Record<
     | 'expiredSubmitting'
     | 'expiredNext'
     | 'emptySubmitting'
     | 'casVoting'
     | 'casNext'
-    | 'scheduledFirst',
+    | 'scheduledFirst'
+    | 'chillSubmitting'
+    | 'chillNext'
+    | 'fastSubmitting'
+    | 'fastNext',
     Round
   >
 }
