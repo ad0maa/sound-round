@@ -32,7 +32,9 @@ type NewRoundPageProps = {
 const NewRoundPage = ({ id }: NewRoundPageProps) => {
   const [theme, setTheme] = useState('')
   const [description, setDescription] = useState('')
-  const [songsPerPlayer, setSongsPerPlayer] = useState(1)
+  // Raw strings while typing: coercing per keystroke stopped the field being
+  // cleared mid-edit. Parsed and checked in onSubmit.
+  const [songsPerPlayer, setSongsPerPlayer] = useState('1')
   const [submissionDurationHours, setSubmissionDurationHours] = useState('')
   const [votingDurationHours, setVotingDurationHours] = useState('')
 
@@ -50,19 +52,44 @@ const NewRoundPage = ({ id }: NewRoundPageProps) => {
       toast.error('Theme is required')
       return
     }
+
+    const songs = parseInt(songsPerPlayer, 10)
+    if (Number.isNaN(songs) || songs < 1 || songs > 5) {
+      toast.error('Songs per player must be between 1 and 5')
+      return
+    }
+
+    const optionalHours = (raw: string, label: string) => {
+      if (!raw) {
+        return { value: null }
+      }
+      const parsed = parseInt(raw, 10)
+      if (Number.isNaN(parsed) || parsed < 1 || parsed > 720) {
+        return { error: `${label} must be between 1 and 720 hours` }
+      }
+      return { value: parsed }
+    }
+
+    const submission = optionalHours(submissionDurationHours, 'Submission')
+    const voting = optionalHours(votingDurationHours, 'Voting')
+    if ('error' in submission || 'error' in voting) {
+      toast.error(
+        ('error' in submission && submission.error) ||
+          ('error' in voting && voting.error) ||
+          'Invalid duration'
+      )
+      return
+    }
+
     createRound({
       variables: {
         input: {
           leagueId: id,
           theme: theme.trim(),
           description: description.trim() || null,
-          songsPerPlayer,
-          submissionDurationHours: submissionDurationHours
-            ? parseInt(submissionDurationHours, 10)
-            : null,
-          votingDurationHours: votingDurationHours
-            ? parseInt(votingDurationHours, 10)
-            : null,
+          songsPerPlayer: songs,
+          submissionDurationHours: submission.value,
+          votingDurationHours: voting.value,
         },
       },
     })
@@ -105,12 +132,11 @@ const NewRoundPage = ({ id }: NewRoundPageProps) => {
                 <Input
                   id="songsPerPlayer"
                   type="number"
+                  inputMode="numeric"
                   min={1}
                   max={5}
                   value={songsPerPlayer}
-                  onChange={(e) =>
-                    setSongsPerPlayer(parseInt(e.target.value, 10) || 1)
-                  }
+                  onChange={(e) => setSongsPerPlayer(e.target.value)}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
