@@ -56,12 +56,21 @@ handles the returning-user cold-start case: Cedar holds (no premature login
 redirect) while `getCurrentUser` resolves, and now shows the loader after the
 delay instead of a blank screen.
 
-### 3. Login page (`web/src/pages/LoginPage`)
+### 3. Auth pages — `<WakingPopup />` on submit
 
-For unauthenticated visitors there's no `getCurrentUser` to hold on — the wake
-happens on submit. Track a submitting flag and, after the same delay, surface a
-lightweight "Waking up the database…" helper line while the login request is in
-flight. Small, optional-polish change; reuses the same copy.
+For unauthenticated visitors there's no `getCurrentUser` to hold on, and the UI
+is already painted — so the full-screen loader would be wrong here (it would
+replace the loaded form). Instead, the **submit handlers** (`logIn` on
+LoginPage, the demo `signUp`, and `signUp` on SignupPage) start a 700 ms timer;
+if the request is still in flight past it, a small **floating popup card**
+(`WakingPopup`) appears bottom-center with the same animation + copy, and clears
+in the `finally`. It's `position: fixed`, `pointer-events: none`, so it overlays
+without moving or blocking the form. Warm submits resolve first and never show
+it.
+
+`WakingPopup` composes `<WakingLoader fullscreen={false} delayMs={0} />` inside
+the card; the caller owns the 700 ms delay by only mounting it once past the
+threshold.
 
 ### 4. Preview page (`web/src/pages/LoaderPreviewPage`, route `/loader-preview`)
 
@@ -87,8 +96,11 @@ the live deploy; it can be removed or dev-gated in a follow-up once we're happy.
 
 ## Out of scope (YAGNI)
 
-- Server-side cold-start detection or a dedicated warmup ping. The `getCurrentUser`
-  query already wakes Neon for the returning-user case; a separate ping only helps
-  on the login page and isn't needed for v1.
+- Server-side cold-start detection.
+- A proactive warmup ping (public `@skipAuth` query fired on auth-page mount).
+  Considered and rejected: it would wake Neon — and burn an op — every time
+  someone lands on login/signup even if they never submit, and the Vercel-function
+  half of the wake-up wouldn't reliably carry to the eventual login request
+  anyway. The on-submit `WakingPopup` covers the felt problem without that cost.
 - Global Cell `Loading` default — can adopt the same component later if in-app
   slow queries prove annoying.

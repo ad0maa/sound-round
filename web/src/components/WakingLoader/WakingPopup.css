@@ -1,0 +1,35 @@
+.wl-popup {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  z-index: 50;
+  width: min(340px, calc(100vw - 2rem));
+  padding: 1rem 1.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  animation: wl-pop-in 0.28s ease-out;
+}
+
+@keyframes wl-pop-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.wl-popup {
+  transform: translateX(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-popup {
+    animation: none;
+  }
+}

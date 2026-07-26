@@ -15,6 +15,7 @@ import { Metadata } from '@cedarjs/web'
 import { toast, Toaster } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
+import WakingPopup from 'src/components/WakingLoader/WakingPopup'
 import { Button, buttonVariants } from 'src/components/ui/button'
 import {
   Card,
@@ -74,6 +75,7 @@ const LoginPage = () => {
 
   const onTryDemo = async () => {
     setIsStartingDemo(true)
+    const wakingTimer = setTimeout(() => setShowWaking(true), 700)
     try {
       // Throwaway, invisible credentials — the visitor never sees these.
       // The server marks the account as a demo user and expires it later.
@@ -90,6 +92,8 @@ const LoginPage = () => {
         toast.success("You're in! Feel free to click around.")
       }
     } finally {
+      clearTimeout(wakingTimer)
+      setShowWaking(false)
       setIsStartingDemo(false)
     }
   }
@@ -103,6 +107,7 @@ const LoginPage = () => {
           position="top-right"
           toastOptions={{ ...toastOptions, duration: 6000 }}
         />
+        {showWaking && <WakingPopup />}
         <div className="w-full max-w-md space-y-4">
           <div className="flex items-center justify-center gap-2.5">
             <span className="grid size-9 flex-none place-items-center rounded-full bg-brand-600 text-white">
@@ -175,12 +180,6 @@ const LoginPage = () => {
                 <Submit className={buttonVariants({ className: 'w-full' })}>
                   Log In
                 </Submit>
-
-                {showWaking && (
-                  <p className="text-center font-mono text-xs text-muted-foreground">
-                    Waking up the database…
-                  </p>
-                )}
               </Form>
 
               <div className="my-4 flex items-center gap-3">

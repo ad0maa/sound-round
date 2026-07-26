@@ -32,11 +32,7 @@ const Routes = () => {
         <Route path="/join/{code}" page={JoinPage} name="join" />
       </PrivateSet>
 
-      <PrivateSet
-        unauthenticated="login"
-        wrap={AppLayout}
-        whileLoadingAuth={() => <WakingLoader />}
-      >
+      <PrivateSet unauthenticated="login" wrap={AppLayout} whileLoadingAuth={() => <WakingLoader />}>
         <Route path="/leagues" page={LeaguesPage} name="leagues" />
         <Route path="/leagues/new" page={NewLeaguePage} name="newLeague" />
         <Route path="/leagues/browse" page={BrowseLeaguesPage} name="browseLeagues" />

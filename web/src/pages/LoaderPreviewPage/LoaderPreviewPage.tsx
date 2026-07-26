@@ -3,12 +3,19 @@ import { useState } from 'react'
 import { Metadata } from '@cedarjs/web'
 
 import WakingLoader from 'src/components/WakingLoader/WakingLoader'
+import WakingPopup from 'src/components/WakingLoader/WakingPopup'
 import { Button } from 'src/components/ui/button'
 
 type Sim = { key: number; delayMs: number; settleMs: number } | null
 
 const LoaderPreviewPage = () => {
   const [sim, setSim] = useState<Sim>(null)
+  const [showPopup, setShowPopup] = useState(false)
+
+  const previewPopup = () => {
+    setShowPopup(true)
+    setTimeout(() => setShowPopup(false), 4500)
+  }
 
   // Mounts a real WakingLoader (with its production 700ms delay) and then
   // "resolves" after settleMs, mimicking a fast vs. slow database response.
@@ -69,7 +76,22 @@ const LoaderPreviewPage = () => {
             )}
           </div>
         </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium text-muted-foreground">
+            Auth-page popup (login / signup submit)
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            A small floating card that overlays the page while a slow login/signup
+            waits on a cold start — the form stays put, nothing is replaced.
+          </p>
+          <Button variant="outline" onClick={previewPopup}>
+            Show the popup for 4.5s
+          </Button>
+        </section>
       </main>
+
+      {showPopup && <WakingPopup />}
     </>
   )
 }
