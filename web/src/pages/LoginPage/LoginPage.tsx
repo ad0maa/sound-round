@@ -36,6 +36,9 @@ import { toastOptions } from 'src/lib/toastOptions'
 const LoginPage = () => {
   const { isAuthenticated, logIn, signUp } = useAuth()
   const [isStartingDemo, setIsStartingDemo] = useState(false)
+  // Shown while a login is in flight past the cold-start threshold, so a slow
+  // Neon wake-up reads as "the database is booting" rather than a frozen form.
+  const [showWaking, setShowWaking] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -49,17 +52,23 @@ const LoginPage = () => {
   }, [])
 
   const onSubmit = async (data: Record<string, string>) => {
-    const response = await logIn({
-      username: data.username,
-      password: data.password,
-    })
+    const wakingTimer = setTimeout(() => setShowWaking(true), 700)
+    try {
+      const response = await logIn({
+        username: data.username,
+        password: data.password,
+      })
 
-    if (response.message) {
-      toast(response.message)
-    } else if (response.error) {
-      toast.error(response.error)
-    } else {
-      toast.success('Welcome back!')
+      if (response.message) {
+        toast(response.message)
+      } else if (response.error) {
+        toast.error(response.error)
+      } else {
+        toast.success('Welcome back!')
+      }
+    } finally {
+      clearTimeout(wakingTimer)
+      setShowWaking(false)
     }
   }
 
@@ -166,6 +175,12 @@ const LoginPage = () => {
                 <Submit className={buttonVariants({ className: 'w-full' })}>
                   Log In
                 </Submit>
+
+                {showWaking && (
+                  <p className="text-center font-mono text-xs text-muted-foreground">
+                    Waking up the database…
+                  </p>
+                )}
               </Form>
 
               <div className="my-4 flex items-center gap-3">
