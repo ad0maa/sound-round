@@ -5,6 +5,8 @@ import './WakingLoader.css'
 export interface WakingLoaderProps {
   /** Caption shown under the animation. */
   message?: string
+  /** Cheeky second line under the caption. Pass null to hide it. */
+  subMessage?: string | null
   /** Delay before the loader appears (ms). Warm loads that resolve faster than
    * this never see it. Pass 0 to show immediately (e.g. the preview page). */
   delayMs?: number
@@ -14,6 +16,7 @@ export interface WakingLoaderProps {
 
 const WakingLoader = ({
   message = 'Waking up the database',
+  subMessage = 'hosting ain’t free',
   delayMs = 700,
   fullscreen = true,
 }: WakingLoaderProps) => {
@@ -140,6 +143,14 @@ const WakingLoader = ({
         {message}
         <span className="wl-dot" />
       </p>
+      {subMessage && (
+        <p
+          className="font-mono text-xs text-muted-foreground opacity-70"
+          aria-hidden="true"
+        >
+          …{subMessage}
+        </p>
+      )}
     </div>
   )
 }
