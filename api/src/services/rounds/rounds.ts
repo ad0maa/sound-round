@@ -7,6 +7,7 @@ import type {
 import { UserInputError } from '@cedarjs/graphql-server'
 
 import { db } from 'src/lib/db'
+import { validateRoundSettings } from 'src/lib/leagueValidation'
 import { requireLeagueRole, requireMembership } from 'src/lib/membership'
 import {
   advanceToResults,
@@ -87,6 +88,11 @@ export const createRound: MutationResolvers['createRound'] = async ({
   input,
 }) => {
   await requireLeagueRole(input.leagueId, ['creator', 'admin'])
+
+  if (!input.theme.trim()) {
+    throw new UserInputError('Every round needs a theme')
+  }
+  validateRoundSettings(input)
 
   const league = await db.league.findUnique({ where: { id: input.leagueId } })
 

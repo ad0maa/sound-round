@@ -376,7 +376,9 @@ export const Success = ({
                     <div className="font-semibold">{round.theme}</div>
                     <div className="text-xs text-muted-foreground">
                       {kind === 'up'
-                        ? `Opens after round ${round.roundNumber - 1}`
+                        ? round.roundNumber === 1
+                          ? 'Opens when the league starts'
+                          : `Opens after round ${round.roundNumber - 1}`
                         : `${round.submissionCount ?? 0} submission${round.submissionCount === 1 ? '' : 's'}`}
                     </div>
                   </div>

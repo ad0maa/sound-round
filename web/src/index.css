@@ -244,6 +244,19 @@
     outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
+
+  /* Native number spinners: tiny hit targets that crowd our pill inputs, and
+     scroll-wheel focus changes the value by accident. Type the number. */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
 
 @layer utilities {

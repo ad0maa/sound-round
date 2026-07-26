@@ -5,6 +5,12 @@ export const schema = gql`
     player
   }
 
+  enum Pacing {
+    chill
+    fast
+    fastest
+  }
+
   type League {
     id: String!
     name: String!
@@ -18,8 +24,10 @@ export const schema = gql`
     downvotesEnabled: Boolean!
     downvotesPerRound: Int!
     maxPointsPerSong: Int
+    maxDownvotesPerSong: Int
     uniqueArtists: Boolean!
     totalRounds: Int!
+    pacing: Pacing!
     submissionDeadlineHours: Int!
     votingDeadlineHours: Int!
     startsAt: DateTime
@@ -63,8 +71,10 @@ export const schema = gql`
     downvotesEnabled: Boolean
     downvotesPerRound: Int
     maxPointsPerSong: Int
+    maxDownvotesPerSong: Int
     uniqueArtists: Boolean
     totalRounds: Int
+    pacing: Pacing
     submissionDeadlineHours: Int
     votingDeadlineHours: Int
     startsAt: DateTime
@@ -80,8 +90,10 @@ export const schema = gql`
     downvotesEnabled: Boolean
     downvotesPerRound: Int
     maxPointsPerSong: Int
+    maxDownvotesPerSong: Int
     uniqueArtists: Boolean
     totalRounds: Int
+    pacing: Pacing
     submissionDeadlineHours: Int
     votingDeadlineHours: Int
     startsAt: DateTime

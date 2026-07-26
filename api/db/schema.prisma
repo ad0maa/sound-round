@@ -33,6 +33,14 @@ enum Platform {
   youtube
 }
 
+/// How aggressively a league's rounds move along. `fastest` is the original
+/// (and only) behaviour, so it stays the default.
+enum Pacing {
+  chill
+  fast
+  fastest
+}
+
 model User {
   id                  String         @id @default(uuid())
   email               String         @unique
@@ -67,9 +75,13 @@ model League {
   upvotesPerRound         Int            @default(10)
   downvotesEnabled        Boolean        @default(false)
   downvotesPerRound       Int            @default(0)
+  // Per-song caps, one per direction. Null means "no separate cap" and falls
+  // back to that direction's per-round budget.
   maxPointsPerSong        Int?
+  maxDownvotesPerSong     Int?
   uniqueArtists           Boolean        @default(false)
   totalRounds             Int            @default(10)
+  pacing                  Pacing         @default(fastest)
   submissionDeadlineHours Int            @default(72)
   votingDeadlineHours     Int            @default(48)
   // Optional scheduled start — round 1 opens lazily once this passes.

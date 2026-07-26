@@ -15,10 +15,24 @@ import { notifyRoundTransition } from './roundNotifications.js'
  * Transitions are optimistic compare-and-sets (updateMany filtered on the
  * expected current state) so concurrent serverless invocations can't
  * double-apply a transition's side effects.
+ *
+ * `league.pacing` decides how eagerly all of that happens:
+ *
+ *   chill    deadlines never move and phases never end early. The whole round
+ *            is scheduled the moment it opens and plays out on the clock.
+ *   fast     the schedule is fixed the same way, but a phase may end early once
+ *            everyone has acted — results appear immediately while the next
+ *            round still waits for its scheduled start.
+ *   fastest  the original behaviour: every phase ends the moment everyone has
+ *            acted and each deadline is recomputed as now + duration, so the
+ *            whole league slides forward.
  */
 
 const hoursFromNow = (hours: number) =>
   new Date(Date.now() + hours * 60 * 60 * 1000)
+
+const hoursAfter = (from: Date, hours: number) =>
+  new Date(from.getTime() + hours * 60 * 60 * 1000)
 
 /** Per-round duration overrides fall back to the league-level defaults. */
 const submissionHours = (league: League, round: Round) =>
@@ -27,18 +41,69 @@ const submissionHours = (league: League, round: Round) =>
 const votingHours = (league: League, round: Round) =>
   round.votingDurationHours ?? league.votingDeadlineHours
 
+/** Only `fastest` recomputes deadlines from "now" at each transition. */
+const slidesDeadlines = (league: League) => league.pacing === 'fastest'
+
+/** `chill` waits out every deadline; the other two cut a phase short. */
+const advancesEarly = (league: League) => league.pacing !== 'chill'
+
+/**
+ * When a round should have opened. For scheduled pacing this anchors the whole
+ * round to the previous round's voting deadline, so an early finish doesn't
+ * drag the calendar forward and lateness doesn't accumulate.
+ */
+const scheduledOpenFor = async (
+  round: Round,
+  league: League
+): Promise<Date> => {
+  if (round.roundNumber > 1) {
+    const previous = await db.round.findUnique({
+      where: {
+        leagueId_roundNumber: {
+          leagueId: league.id,
+          roundNumber: round.roundNumber - 1,
+        },
+      },
+    })
+    if (previous?.votingClose) {
+      return previous.votingClose
+    }
+  }
+
+  // Round 1 (or a league with a gap in its history) starts on the scheduled
+  // start time if there is one and it has already passed.
+  const now = new Date()
+  if (league.startsAt && league.startsAt <= now) {
+    return league.startsAt
+  }
+  return now
+}
+
 /** upcoming -> submitting. Returns the fresh round (unchanged if we lost the race). */
 export const openRoundForSubmissions = async (
   round: Round,
   league: League
 ): Promise<Round> => {
+  // Scheduled pacing stamps both deadlines up front — the voting deadline has
+  // to exist before voting opens, because it's what the next round waits on.
+  const schedule = slidesDeadlines(league)
+    ? {
+        submissionsOpen: new Date(),
+        submissionsClose: hoursFromNow(submissionHours(league, round)),
+      }
+    : await (async () => {
+        const open = await scheduledOpenFor(round, league)
+        const close = hoursAfter(open, submissionHours(league, round))
+        return {
+          submissionsOpen: open,
+          submissionsClose: close,
+          votingClose: hoursAfter(close, votingHours(league, round)),
+        }
+      })()
+
   const { count } = await db.round.updateMany({
     where: { id: round.id, state: 'upcoming' },
-    data: {
-      state: 'submitting',
-      submissionsOpen: new Date(),
-      submissionsClose: hoursFromNow(submissionHours(league, round)),
-    },
+    data: { state: 'submitting', ...schedule },
   })
   const fresh = await db.round.findUnique({ where: { id: round.id } })
 
@@ -55,11 +120,24 @@ export const advanceToVoting = async (
   round: Round,
   league: League
 ): Promise<Round> => {
+  // Under scheduled pacing the voting deadline was set when the round opened;
+  // leaving it alone is what keeps the next round on schedule. The `!votingClose`
+  // fallback covers a league switched to scheduled pacing mid-round, where the
+  // round opened without one — without it the round could never settle.
+  const votingClose = slidesDeadlines(league)
+    ? hoursFromNow(votingHours(league, round))
+    : round.votingClose
+      ? null
+      : hoursAfter(
+          round.submissionsClose ?? new Date(),
+          votingHours(league, round)
+        )
+
   const { count } = await db.round.updateMany({
     where: { id: round.id, state: 'submitting' },
     data: {
       state: 'voting',
-      votingClose: hoursFromNow(votingHours(league, round)),
+      ...(votingClose ? { votingClose } : {}),
     },
   })
   const fresh = await db.round.findUnique({ where: { id: round.id } })
@@ -86,11 +164,20 @@ export const advanceToResults = async (
   // (and notifies).
   if (count > 0) {
     await notifyRoundTransition('results', fresh)
-    await maybeOpenNextRound(league, round.roundNumber)
+
+    // Under scheduled pacing an early finish shows results straight away but
+    // leaves the next round to open at its own time (settleLeagueRounds).
+    if (slidesDeadlines(league) || nextRoundIsDue(fresh)) {
+      await maybeOpenNextRound(league, round.roundNumber)
+    }
   }
 
   return fresh
 }
+
+/** The next round is due once this one's scheduled voting deadline has passed. */
+const nextRoundIsDue = (round: Round | null) =>
+  !!round?.votingClose && round.votingClose <= new Date()
 
 /**
  * Lazily apply any deadline-driven transition for a round.
@@ -134,35 +221,91 @@ export const settleRound = async (roundId: string): Promise<Round | null> => {
 }
 
 /**
- * Settle a league's active round (at most one exists), and open round 1 if the
- * league's scheduled start time has passed.
+ * Open the league's next round if its start time has arrived. Round 1 waits on
+ * `league.startsAt`; every later round waits on its predecessor's voting
+ * deadline, which is what holds `chill` and `fast` leagues to their schedule
+ * after an early finish. Returns whether anything opened.
  */
-export const settleLeagueRounds = async (leagueId: string): Promise<void> => {
+const openDueRound = async (league: League): Promise<boolean> => {
   const now = new Date()
 
-  const due = await db.round.findFirst({
+  // Nothing opens while a round is still running.
+  const active = await db.round.findFirst({
+    where: { leagueId: league.id, state: { in: ['submitting', 'voting'] } },
+  })
+  if (active) {
+    return false
+  }
+
+  const next = await db.round.findFirst({
+    where: { leagueId: league.id, state: 'upcoming' },
+    orderBy: { roundNumber: 'asc' },
+  })
+  if (!next) {
+    return false
+  }
+
+  if (next.roundNumber === 1) {
+    if (!league.startsAt || league.startsAt > now) {
+      return false
+    }
+    await openRoundForSubmissions(next, league)
+    return true
+  }
+
+  const previous = await db.round.findUnique({
     where: {
-      leagueId,
-      OR: [
-        { state: 'submitting', submissionsClose: { lte: now } },
-        { state: 'voting', votingClose: { lte: now } },
-      ],
+      leagueId_roundNumber: {
+        leagueId: league.id,
+        roundNumber: next.roundNumber - 1,
+      },
     },
   })
-  if (due) {
-    await settleRound(due.id)
+  if (previous?.state !== 'results' || !nextRoundIsDue(previous)) {
+    return false
+  }
+
+  await openRoundForSubmissions(next, league)
+  return true
+}
+
+/**
+ * Settle a league's active round (at most one exists), and open the next round
+ * if it's due.
+ *
+ * Settling can cascade — a league nobody has loaded for a fortnight may have
+ * several rounds whose deadlines have all passed — so this loops until the
+ * league is up to date. The bound stops a bad schedule spinning a request.
+ */
+export const settleLeagueRounds = async (leagueId: string): Promise<void> => {
+  const league = await db.league.findUnique({ where: { id: leagueId } })
+  if (!league) {
     return
   }
 
-  // Scheduled start: open round 1 once startsAt has passed.
-  const league = await db.league.findUnique({ where: { id: leagueId } })
-  if (league?.startsAt && league.startsAt <= now) {
-    const firstRound = await db.round.findUnique({
-      where: { leagueId_roundNumber: { leagueId, roundNumber: 1 } },
+  for (let pass = 0; pass < 20; pass++) {
+    const now = new Date()
+
+    const due = await db.round.findFirst({
+      where: {
+        leagueId,
+        OR: [
+          { state: 'submitting', submissionsClose: { lte: now } },
+          { state: 'voting', votingClose: { lte: now } },
+        ],
+      },
+      orderBy: { roundNumber: 'asc' },
     })
-    if (firstRound?.state === 'upcoming') {
-      await openRoundForSubmissions(firstRound, league)
+    if (due) {
+      await settleRound(due.id)
+      continue
     }
+
+    if (await openDueRound(league)) {
+      continue
+    }
+
+    return
   }
 }
 
@@ -176,6 +319,9 @@ export const checkAutoAdvanceSubmission = async (
   }
 
   const league = await db.league.findUnique({ where: { id: round.leagueId } })
+  if (!advancesEarly(league)) {
+    return null
+  }
 
   const memberCount = await db.leagueMember.count({
     where: { leagueId: round.leagueId },
@@ -203,6 +349,9 @@ export const checkAutoAdvanceVoting = async (
   }
 
   const league = await db.league.findUnique({ where: { id: round.leagueId } })
+  if (!advancesEarly(league)) {
+    return null
+  }
 
   const memberCount = await db.leagueMember.count({
     where: { leagueId: round.leagueId },

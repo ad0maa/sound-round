@@ -12,6 +12,13 @@ import { useMutation } from '@cedarjs/web'
 import { toast } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
+import {
+  hoursToDays,
+  type LeagueRulesValues,
+  type Pacing,
+  toLeagueRulesInput,
+} from 'src/components/LeagueRulesFields/leagueRules'
+import LeagueRulesFields from 'src/components/LeagueRulesFields/LeagueRulesFields'
 import PageContainer from 'src/components/PageContainer/PageContainer'
 import PageHeader from 'src/components/PageHeader/PageHeader'
 import { Badge } from 'src/components/ui/badge'
@@ -43,7 +50,9 @@ export const QUERY: TypedDocumentNode<
       downvotesEnabled
       downvotesPerRound
       maxPointsPerSong
+      maxDownvotesPerSong
       uniqueArtists
+      pacing
       submissionDeadlineHours
       votingDeadlineHours
       myRole
@@ -119,25 +128,26 @@ export const Success = ({ league }: CellProps) => {
   const [name, setName] = useState(league.name)
   const [description, setDescription] = useState(league.description ?? '')
   const [isPublic, setIsPublic] = useState(league.isPublic)
-  const [maxPlayers, setMaxPlayers] = useState(league.maxPlayers)
-  const [upvotesPerRound, setUpvotesPerRound] = useState(league.upvotesPerRound)
-  const [downvotesEnabled, setDownvotesEnabled] = useState(
-    league.downvotesEnabled
-  )
-  const [downvotesPerRound, setDownvotesPerRound] = useState(
-    league.downvotesPerRound
-  )
-  const [maxPointsPerSong, setMaxPointsPerSong] = useState(
-    league.maxPointsPerSong != null ? String(league.maxPointsPerSong) : ''
-  )
-  const [uniqueArtists, setUniqueArtists] = useState(league.uniqueArtists)
-  const [submissionDeadlineHours, setSubmissionDeadlineHours] = useState(
-    league.submissionDeadlineHours
-  )
-  const [votingDeadlineHours, setVotingDeadlineHours] = useState(
-    league.votingDeadlineHours
-  )
+  const [rules, setRules] = useState<LeagueRulesValues>(() => ({
+    maxPlayers: String(league.maxPlayers),
+    upvotesPerRound: String(league.upvotesPerRound),
+    maxPointsPerSong:
+      league.maxPointsPerSong != null ? String(league.maxPointsPerSong) : '',
+    downvotesEnabled: league.downvotesEnabled,
+    downvotesPerRound: String(league.downvotesPerRound),
+    maxDownvotesPerSong:
+      league.maxDownvotesPerSong != null
+        ? String(league.maxDownvotesPerSong)
+        : '',
+    uniqueArtists: league.uniqueArtists,
+    pacing: league.pacing as Pacing,
+    submissionDays: hoursToDays(league.submissionDeadlineHours),
+    votingDays: hoursToDays(league.votingDeadlineHours),
+  }))
   const [copied, setCopied] = useState(false)
+
+  const updateRules = (patch: Partial<LeagueRulesValues>) =>
+    setRules((prev) => ({ ...prev, ...patch }))
 
   const refetch = {
     refetchQueries: [{ query: QUERY, variables: { id: league.id } }],
@@ -213,23 +223,20 @@ export const Success = ({ league }: CellProps) => {
       toast.error('League name is required')
       return
     }
+    const built = toLeagueRulesInput(rules)
+    if ('error' in built) {
+      toast.error(built.error)
+      return
+    }
+
     updateLeague({
       variables: {
         id: league.id,
         input: {
+          ...built.input,
           name: name.trim(),
           description: description.trim() || null,
           isPublic,
-          maxPlayers,
-          upvotesPerRound,
-          downvotesEnabled,
-          downvotesPerRound: downvotesEnabled ? downvotesPerRound : 0,
-          maxPointsPerSong: maxPointsPerSong
-            ? parseInt(maxPointsPerSong, 10)
-            : null,
-          uniqueArtists,
-          submissionDeadlineHours,
-          votingDeadlineHours,
         },
       },
     })
@@ -300,117 +307,8 @@ export const Success = ({ league }: CellProps) => {
                 </CardDescription>
               )}
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="maxPlayers">Max players</Label>
-                  <Input
-                    id="maxPlayers"
-                    type="number"
-                    min={2}
-                    value={maxPlayers}
-                    onChange={(e) =>
-                      setMaxPlayers(parseInt(e.target.value, 10) || 2)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="upvotes">Points per round</Label>
-                  <Input
-                    id="upvotes"
-                    type="number"
-                    min={1}
-                    value={upvotesPerRound}
-                    onChange={(e) =>
-                      setUpvotesPerRound(parseInt(e.target.value, 10) || 1)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxPerSong">Max points per song</Label>
-                  <Input
-                    id="maxPerSong"
-                    type="number"
-                    min={1}
-                    value={maxPointsPerSong}
-                    onChange={(e) => setMaxPointsPerSong(e.target.value)}
-                    placeholder="No cap"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="submissionHours">
-                    Submission window (hrs)
-                  </Label>
-                  <Input
-                    id="submissionHours"
-                    type="number"
-                    min={1}
-                    value={submissionDeadlineHours}
-                    onChange={(e) =>
-                      setSubmissionDeadlineHours(
-                        parseInt(e.target.value, 10) || 1
-                      )
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="votingHours">Voting window (hrs)</Label>
-                  <Input
-                    id="votingHours"
-                    type="number"
-                    min={1}
-                    value={votingDeadlineHours}
-                    onChange={(e) =>
-                      setVotingDeadlineHours(parseInt(e.target.value, 10) || 1)
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="uniqueArtists">Unique artists</Label>
-                  <p className="text-xs text-muted-foreground">
-                    One song per artist per round
-                  </p>
-                </div>
-                <Switch
-                  id="uniqueArtists"
-                  checked={uniqueArtists}
-                  onCheckedChange={setUniqueArtists}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="downvotes">Downvotes</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Allow negative points
-                  </p>
-                </div>
-                <Switch
-                  id="downvotes"
-                  checked={downvotesEnabled}
-                  onCheckedChange={setDownvotesEnabled}
-                />
-              </div>
-
-              {downvotesEnabled && (
-                <div className="space-y-2">
-                  <Label htmlFor="downvotesPerRound">
-                    Downvote points per round
-                  </Label>
-                  <Input
-                    id="downvotesPerRound"
-                    type="number"
-                    min={0}
-                    value={downvotesPerRound}
-                    onChange={(e) =>
-                      setDownvotesPerRound(parseInt(e.target.value, 10) || 0)
-                    }
-                  />
-                </div>
-              )}
+            <CardContent>
+              <LeagueRulesFields values={rules} onChange={updateRules} />
             </CardContent>
           </Card>
 

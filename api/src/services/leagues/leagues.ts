@@ -9,6 +9,7 @@ import type {
 import { ForbiddenError, UserInputError } from '@cedarjs/graphql-server'
 
 import { db } from 'src/lib/db'
+import { validateLeagueSettings } from 'src/lib/leagueValidation'
 import { requireLeagueRole } from 'src/lib/membership'
 import {
   openRoundForSubmissions,
@@ -67,6 +68,8 @@ export const createLeague: MutationResolvers['createLeague'] = async ({
   if (rounds.some((r) => !r.theme.trim())) {
     throw new UserInputError('Every round needs a theme')
   }
+
+  validateLeagueSettings({ ...leagueData, totalRounds: rounds.length })
 
   // Creator automatically joins with the "creator" role. All rounds are
   // created upfront in `upcoming` — round 1 opens via startLeague, the
@@ -132,6 +135,9 @@ export const updateLeague: MutationResolvers['updateLeague'] = async ({
   if (!found) {
     throw new UserInputError('League not found')
   }
+
+  // Input is partial, so cross-field rules need the stored values underneath it.
+  validateLeagueSettings({ ...found, ...input })
 
   if (input.maxPlayers != null) {
     const memberCount = await db.leagueMember.count({
