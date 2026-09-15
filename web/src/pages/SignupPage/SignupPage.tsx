@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Music } from 'lucide-react'
 
@@ -15,6 +15,7 @@ import { Metadata } from '@cedarjs/web'
 import { toast, Toaster } from '@cedarjs/web/toast'
 
 import { useAuth } from 'src/auth'
+import WakingPopup from 'src/components/WakingLoader/WakingPopup'
 import { buttonVariants } from 'src/components/ui/button'
 import {
   Card,
@@ -34,6 +35,9 @@ import { toastOptions } from 'src/lib/toastOptions'
 
 const SignupPage = () => {
   const { isAuthenticated, signUp } = useAuth()
+  // Shown while signup is in flight past the cold-start threshold, so a slow
+  // Neon wake-up reads as "the database is booting" rather than a frozen form.
+  const [showWaking, setShowWaking] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -48,19 +52,25 @@ const SignupPage = () => {
   }, [])
 
   const onSubmit = async (data: Record<string, string>) => {
-    const response = await signUp({
-      username: data.username,
-      password: data.password,
-      displayName: data.displayName,
-    })
+    const wakingTimer = setTimeout(() => setShowWaking(true), 700)
+    try {
+      const response = await signUp({
+        username: data.username,
+        password: data.password,
+        displayName: data.displayName,
+      })
 
-    if (response.message) {
-      toast(response.message)
-    } else if (response.error) {
-      toast.error(response.error)
-    } else {
-      // user is signed in automatically
-      toast.success('Welcome!')
+      if (response.message) {
+        toast(response.message)
+      } else if (response.error) {
+        toast.error(response.error)
+      } else {
+        // user is signed in automatically
+        toast.success('Welcome!')
+      }
+    } finally {
+      clearTimeout(wakingTimer)
+      setShowWaking(false)
     }
   }
 
@@ -73,6 +83,7 @@ const SignupPage = () => {
           position="top-right"
           toastOptions={{ ...toastOptions, duration: 6000 }}
         />
+        {showWaking && <WakingPopup />}
         <div className="w-full max-w-md space-y-4">
           <div className="flex items-center justify-center gap-2.5">
             <span className="grid size-9 flex-none place-items-center rounded-full bg-brand-600 text-white">

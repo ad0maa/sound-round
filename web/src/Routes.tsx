@@ -9,6 +9,7 @@
 
 import { Router, Route, PrivateSet } from '@cedarjs/router'
 
+import WakingLoader from 'src/components/WakingLoader/WakingLoader'
 import AppLayout from 'src/layouts/AppLayout/AppLayout'
 
 import { useAuth } from './auth.js'
@@ -16,6 +17,7 @@ import { useAuth } from './auth.js'
 const Routes = () => {
   return (
     <Router useAuth={useAuth}>
+      <Route path="/loader-preview" page={LoaderPreviewPage} name="loaderPreview" />
       <Route path="/login" page={LoginPage} name="login" />
       <Route path="/signup" page={SignupPage} name="signup" />
       <Route path="/forgot-password" page={ForgotPasswordPage} name="forgotPassword" />
@@ -26,11 +28,11 @@ const Routes = () => {
       <Route path="/" page={HomePage} name="home" />
 
       {/* Join lives outside the layout: it's the invite-link landing page */}
-      <PrivateSet unauthenticated="login">
+      <PrivateSet unauthenticated="login" whileLoadingAuth={() => <WakingLoader />}>
         <Route path="/join/{code}" page={JoinPage} name="join" />
       </PrivateSet>
 
-      <PrivateSet unauthenticated="login" wrap={AppLayout}>
+      <PrivateSet unauthenticated="login" wrap={AppLayout} whileLoadingAuth={() => <WakingLoader />}>
         <Route path="/leagues" page={LeaguesPage} name="leagues" />
         <Route path="/leagues/new" page={NewLeaguePage} name="newLeague" />
         <Route path="/leagues/browse" page={BrowseLeaguesPage} name="browseLeagues" />
